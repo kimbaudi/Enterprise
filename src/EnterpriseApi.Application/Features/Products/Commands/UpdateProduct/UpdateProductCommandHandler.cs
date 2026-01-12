@@ -1,4 +1,5 @@
 using AutoMapper;
+using EnterpriseApi.Application.Common.Exceptions;
 using EnterpriseApi.Application.DTOs;
 using EnterpriseApi.Domain.Entities;
 using EnterpriseApi.Domain.Interfaces;
@@ -28,7 +29,7 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
         
         if (existingProduct == null)
         {
-            throw new KeyNotFoundException($"Product with ID {request.Id} not found");
+            throw new NotFoundException("Product", request.Id);
         }
 
         existingProduct.Name = request.Name;

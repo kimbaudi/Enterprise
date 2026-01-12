@@ -1,3 +1,4 @@
+using EnterpriseApi.Application.Common.Models;
 using EnterpriseApi.Application.DTOs;
 using EnterpriseApi.Application.Features.Products.Commands.CreateProduct;
 using EnterpriseApi.Application.Features.Products.Commands.DeleteProduct;
@@ -5,8 +6,8 @@ using EnterpriseApi.Application.Features.Products.Commands.UpdateProduct;
 using EnterpriseApi.Application.Features.Products.Queries.GetAllProducts;
 using EnterpriseApi.Application.Features.Products.Queries.GetProductById;
 using EnterpriseApi.Application.Features.Products.Queries.GetProductsByCategory;
+using EnterpriseApi.Application.Features.Products.Queries.GetProductsPaginated;
 using EnterpriseApi.WebApi.Common;
-using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,19 +18,13 @@ namespace EnterpriseApi.WebApi.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IValidator<CreateProductCommand> _createValidator;
-    private readonly IValidator<UpdateProductCommand> _updateValidator;
     private readonly ILogger<ProductsController> _logger;
 
     public ProductsController(
         IMediator mediator,
-        IValidator<CreateProductCommand> createValidator,
-        IValidator<UpdateProductCommand> updateValidator,
         ILogger<ProductsController> logger)
     {
         _mediator = mediator;
-        _createValidator = createValidator;
-        _updateValidator = updateValidator;
         _logger = logger;
     }
 
@@ -77,6 +72,21 @@ public class ProductsController : ControllerBase
     }
 
     /// <summary>
+    /// Get products with pagination
+    /// </summary>
+    [HttpGet("paginated")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<PaginatedResult<ProductDto>>>> GetProductsPaginated(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Getting products page {PageNumber} with size {PageSize}", pageNumber, pageSize);
+        var paginatedProducts = await _mediator.Send(new GetProductsPaginatedQuery(pageNumber, pageSize), cancellationToken);
+        return Ok(new ApiResponse<PaginatedResult<ProductDto>>(paginatedProducts, "Products retrieved successfully"));
+    }
+
+    /// <summary>
     /// Create a new product
     /// </summary>
     [HttpPost]
@@ -95,13 +105,7 @@ public class ProductsController : ControllerBase
             createProductDto.SKU
         );
 
-        var validationResult = await _createValidator.ValidateAsync(command, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-            return BadRequest(new ApiResponse<ProductDto>(errors));
-        }
-
+        // Validation is handled by ValidationBehavior pipeline
         var product = await _mediator.Send(command, cancellationToken);
         return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, 
             new ApiResponse<ProductDto>(product, "Product created successfully"));
@@ -127,13 +131,7 @@ public class ProductsController : ControllerBase
             updateProductDto.Category
         );
 
-        var validationResult = await _updateValidator.ValidateAsync(command, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
-            return BadRequest(new ApiResponse<ProductDto>(errors));
-        }
-
+        // Validation is handled by ValidationBehavior pipeline
         var product = await _mediator.Send(command, cancellationToken);
         return Ok(new ApiResponse<ProductDto>(product, "Product updated successfully"));
     }

@@ -1,3 +1,4 @@
+using EnterpriseApi.Application.Common.Exceptions;
 using EnterpriseApi.Domain.Entities;
 using EnterpriseApi.Domain.Interfaces;
 using MediatR;
@@ -23,7 +24,7 @@ public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand>
         
         if (product == null)
         {
-            throw new KeyNotFoundException($"Product with ID {request.Id} not found");
+            throw new NotFoundException("Product", request.Id);
         }
 
         await _productRepository.DeleteAsync(request.Id, cancellationToken);

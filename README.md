@@ -1,6 +1,6 @@
 # Enterprise API - .NET Core 8 Web API
 
-An enterprise-ready ASP.NET Core 8 Web API implementing **Clean Architecture** with **CQRS pattern**, following best practices and modern development patterns.
+An enterprise-ready ASP.NET Core 8 Web API implementing **Clean Architecture** with **CQRS pattern**, featuring **MediatR pipeline behaviors**, comprehensive validation, logging, and best practices.
 
 ## 🏗️ Architecture
 
@@ -11,12 +11,18 @@ Enterprise/
 ├── src/
 │   ├── EnterpriseApi.Domain/          # Domain entities and interfaces
 │   ├── EnterpriseApi.Application/     # CQRS Commands, Queries, Handlers
-│   │   └── Features/
-│   │       └── Products/
-│   │           ├── Commands/          # Write operations
-│   │           └── Queries/           # Read operations
+│   │   ├── Features/
+│   │   │   └── Products/
+│   │   │       ├── Commands/          # Write operations (Create, Update, Delete)
+│   │   │       └── Queries/           # Read operations (Get, GetAll, etc.)
+│   │   └── Common/
+│   │       ├── Behaviors/             # MediatR pipeline behaviors
+│   │       ├── Exceptions/            # Custom exceptions
+│   │       └── Models/                # Shared models (Pagination, etc.)
 │   ├── EnterpriseApi.Infrastructure/  # Data access, EF Core, repositories
 │   └── EnterpriseApi.WebApi/          # API controllers, middleware
+├── tests/
+│   └── EnterpriseApi.Application.Tests/ # Unit tests
 ├── docs/
 │   └── CQRS-ARCHITECTURE.md           # Detailed architecture guide
 ├── .github/
@@ -40,13 +46,26 @@ API Layer → Application Layer + Infrastructure Layer → Domain Layer
 - **CQRS Pattern** - Separate read and write operations using MediatR
 - **Repository Pattern** - Data access abstraction
 - **Unit of Work Pattern** - Transaction management
+- **Pipeline Behaviors** - Cross-cutting concerns (validation, logging, performance monitoring)
+
+### MediatR Pipeline Behaviors
+
+The application implements three key pipeline behaviors that execute in order for every command/query:
+
+1. **Logging Behavior** - Logs all requests with execution time
+2. **Validation Behavior** - Automatic FluentValidation before handler execution
+3. **Performance Behavior** - Monitors and logs slow requests (>500ms)
+
+```csharp
+Request → Logging → Validation → Performance → Handler → Response
+```
 
 ### Technical Stack
 
 - **Entity Framework Core 8** - Database access with SQL Server
-- **MediatR** - CQRS and mediator pattern implementation
+- **MediatR 14** - CQRS and mediator pattern with pipeline behaviors
 - **AutoMapper** - Object-to-object mapping
-- **FluentValidation** - Input validation with command validators
+- **FluentValidation** - Automatic input validation via pipeline behavior
 - **JWT Authentication** - Secure API endpoints
 - **Swagger/OpenAPI** - API documentation and testing
 - **Serilog** - Structured logging to console and files
@@ -54,6 +73,14 @@ API Layer → Application Layer + Infrastructure Layer → Domain Layer
 - **Health Checks** - Monitoring endpoint
 - **CORS Support** - Cross-origin resource sharing
 - **Docker Support** - Containerization with Docker and Docker Compose
+- **Pagination Support** - Built-in pagination for list queries
+
+### Testing
+
+- **xUnit** - Testing framework
+- **Moq** - Mocking library
+- **FluentAssertions** - Expressive assertions
+- **Unit Tests** - Command handlers, query handlers, and pipeline behaviors
 
 ## 🚀 Getting Started
 
@@ -145,6 +172,7 @@ docker run -p 5000:80 enterprise-api
 ### Products
 
 - `GET /api/products` - Get all products
+- `GET /api/products/paginated?pageNumber=1&pageSize=10` - Get paginated products
 - `GET /api/products/{id}` - Get product by ID
 - `GET /api/products/category/{category}` - Get products by category
 - `POST /api/products` - Create a new product
@@ -187,6 +215,20 @@ Logs are written to:
 - Files in `logs/` directory (rotating daily)
 
 ## 🧪 Testing
+
+### Run Unit Tests
+
+```bash
+dotnet test
+```
+
+The test project includes examples of:
+
+- Testing command handlers (CreateProductCommandHandler)
+- Testing query handlers (GetProductByIdQueryHandler)
+- Testing pipeline behaviors (ValidationBehavior)
+- Using Moq for mocking dependencies
+- Using FluentAssertions for expressive assertions
 
 ### Using Swagger
 
