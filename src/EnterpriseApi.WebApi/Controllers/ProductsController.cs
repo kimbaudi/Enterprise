@@ -1,8 +1,13 @@
 using EnterpriseApi.Application.DTOs;
-using EnterpriseApi.Application.Interfaces;
+using EnterpriseApi.Application.Features.Products.Commands.CreateProduct;
+using EnterpriseApi.Application.Features.Products.Commands.DeleteProduct;
+using EnterpriseApi.Application.Features.Products.Commands.UpdateProduct;
+using EnterpriseApi.Application.Features.Products.Queries.GetAllProducts;
+using EnterpriseApi.Application.Features.Products.Queries.GetProductById;
+using EnterpriseApi.Application.Features.Products.Queries.GetProductsByCategory;
 using EnterpriseApi.WebApi.Common;
 using FluentValidation;
-using Microsoft.AspNetCore.Authorization;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EnterpriseApi.WebApi.Controllers;
@@ -11,18 +16,18 @@ namespace EnterpriseApi.WebApi.Controllers;
 [Route("api/[controller]")]
 public class ProductsController : ControllerBase
 {
-    private readonly IProductService _productService;
-    private readonly IValidator<CreateProductDto> _createValidator;
-    private readonly IValidator<UpdateProductDto> _updateValidator;
+    private readonly IMediator _mediator;
+    private readonly IValidator<CreateProductCommand> _createValidator;
+    private readonly IValidator<UpdateProductCommand> _updateValidator;
     private readonly ILogger<ProductsController> _logger;
 
     public ProductsController(
-        IProductService productService,
-        IValidator<CreateProductDto> createValidator,
-        IValidator<UpdateProductDto> updateValidator,
+        IMediator mediator,
+        IValidator<CreateProductCommand> createValidator,
+        IValidator<UpdateProductCommand> updateValidator,
         ILogger<ProductsController> logger)
     {
-        _productService = productService;
+        _mediator = mediator;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
         _logger = logger;
@@ -36,7 +41,7 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<ApiResponse<IEnumerable<ProductDto>>>> GetAllProducts(CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting all products");
-        var products = await _productService.GetAllProductsAsync(cancellationToken);
+        var products = await _mediator.Send(new GetAllProductsQuery(), cancellationToken);
         return Ok(new ApiResponse<IEnumerable<ProductDto>>(products, "Products retrieved successfully"));
     }
 
@@ -49,7 +54,7 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<ApiResponse<ProductDto>>> GetProductById(Guid id, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting product with ID: {ProductId}", id);
-        var product = await _productService.GetProductByIdAsync(id, cancellationToken);
+        var product = await _mediator.Send(new GetProductByIdQuery(id), cancellationToken);
         
         if (product == null)
         {
@@ -67,7 +72,7 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<ApiResponse<IEnumerable<ProductDto>>>> GetProductsByCategory(string category, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Getting products for category: {Category}", category);
-        var products = await _productService.GetProductsByCategoryAsync(category, cancellationToken);
+        var products = await _mediator.Send(new GetProductsByCategoryQuery(category), cancellationToken);
         return Ok(new ApiResponse<IEnumerable<ProductDto>>(products, "Products retrieved successfully"));
     }
 
@@ -81,14 +86,23 @@ public class ProductsController : ControllerBase
     {
         _logger.LogInformation("Creating new product: {ProductName}", createProductDto.Name);
         
-        var validationResult = await _createValidator.ValidateAsync(createProductDto, cancellationToken);
+        var command = new CreateProductCommand(
+            createProductDto.Name,
+            createProductDto.Description,
+            createProductDto.Price,
+            createProductDto.Stock,
+            createProductDto.Category,
+            createProductDto.SKU
+        );
+
+        var validationResult = await _createValidator.ValidateAsync(command, cancellationToken);
         if (!validationResult.IsValid)
         {
             var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
             return BadRequest(new ApiResponse<ProductDto>(errors));
         }
 
-        var product = await _productService.CreateProductAsync(createProductDto, cancellationToken);
+        var product = await _mediator.Send(command, cancellationToken);
         return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, 
             new ApiResponse<ProductDto>(product, "Product created successfully"));
     }
@@ -104,14 +118,23 @@ public class ProductsController : ControllerBase
     {
         _logger.LogInformation("Updating product with ID: {ProductId}", id);
         
-        var validationResult = await _updateValidator.ValidateAsync(updateProductDto, cancellationToken);
+        var command = new UpdateProductCommand(
+            id,
+            updateProductDto.Name,
+            updateProductDto.Description,
+            updateProductDto.Price,
+            updateProductDto.Stock,
+            updateProductDto.Category
+        );
+
+        var validationResult = await _updateValidator.ValidateAsync(command, cancellationToken);
         if (!validationResult.IsValid)
         {
             var errors = validationResult.Errors.Select(e => e.ErrorMessage).ToList();
             return BadRequest(new ApiResponse<ProductDto>(errors));
         }
 
-        var product = await _productService.UpdateProductAsync(id, updateProductDto, cancellationToken);
+        var product = await _mediator.Send(command, cancellationToken);
         return Ok(new ApiResponse<ProductDto>(product, "Product updated successfully"));
     }
 
@@ -124,7 +147,7 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<ApiResponse<object>>> DeleteProduct(Guid id, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Deleting product with ID: {ProductId}", id);
-        await _productService.DeleteProductAsync(id, cancellationToken);
+        await _mediator.Send(new DeleteProductCommand(id), cancellationToken);
         return Ok(new ApiResponse<object>(null!, "Product deleted successfully"));
     }
 }

@@ -1,11 +1,10 @@
 using FluentValidation;
-using EnterpriseApi.Application.DTOs;
 
-namespace EnterpriseApi.Application.Validators;
+namespace EnterpriseApi.Application.Features.Products.Commands.CreateProduct;
 
-public class CreateProductDtoValidator : AbstractValidator<CreateProductDto>
+public class CreateProductCommandValidator : AbstractValidator<CreateProductCommand>
 {
-    public CreateProductDtoValidator()
+    public CreateProductCommandValidator()
     {
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Product name is required")

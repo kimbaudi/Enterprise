@@ -1,18 +1,24 @@
 # Enterprise API - .NET Core 8 Web API
 
-An enterprise-ready ASP.NET Core 8 Web API with clean architecture, implementing best practices and modern development patterns.
+An enterprise-ready ASP.NET Core 8 Web API implementing **Clean Architecture** with **CQRS pattern**, following best practices and modern development patterns.
 
 ## 🏗️ Architecture
 
-This project follows **Clean Architecture** principles with clear separation of concerns:
+This project follows **Clean Architecture** with **CQRS (Command Query Responsibility Segregation)** using MediatR:
 
 ```
 Enterprise/
 ├── src/
 │   ├── EnterpriseApi.Domain/          # Domain entities and interfaces
-│   ├── EnterpriseApi.Application/     # Business logic, DTOs, services
+│   ├── EnterpriseApi.Application/     # CQRS Commands, Queries, Handlers
+│   │   └── Features/
+│   │       └── Products/
+│   │           ├── Commands/          # Write operations
+│   │           └── Queries/           # Read operations
 │   ├── EnterpriseApi.Infrastructure/  # Data access, EF Core, repositories
 │   └── EnterpriseApi.WebApi/          # API controllers, middleware
+├── docs/
+│   └── CQRS-ARCHITECTURE.md           # Detailed architecture guide
 ├── .github/
 │   └── copilot-instructions.md
 ├── Dockerfile
@@ -20,12 +26,27 @@ Enterprise/
 └── EnterpriseApi.sln
 ```
 
+### Dependency Flow
+
+```
+API Layer → Application Layer + Infrastructure Layer → Domain Layer
+```
+
 ## ✨ Features
 
+### Architecture Patterns
+
 - **Clean Architecture** - Domain, Application, Infrastructure, and Presentation layers
-- **Entity Framework Core 8** - Database access with Repository and Unit of Work patterns
+- **CQRS Pattern** - Separate read and write operations using MediatR
+- **Repository Pattern** - Data access abstraction
+- **Unit of Work Pattern** - Transaction management
+
+### Technical Stack
+
+- **Entity Framework Core 8** - Database access with SQL Server
+- **MediatR** - CQRS and mediator pattern implementation
 - **AutoMapper** - Object-to-object mapping
-- **FluentValidation** - Input validation
+- **FluentValidation** - Input validation with command validators
 - **JWT Authentication** - Secure API endpoints
 - **Swagger/OpenAPI** - API documentation and testing
 - **Serilog** - Structured logging to console and files

@@ -1,12 +1,14 @@
 using FluentValidation;
-using EnterpriseApi.Application.DTOs;
 
-namespace EnterpriseApi.Application.Validators;
+namespace EnterpriseApi.Application.Features.Products.Commands.UpdateProduct;
 
-public class UpdateProductDtoValidator : AbstractValidator<UpdateProductDto>
+public class UpdateProductCommandValidator : AbstractValidator<UpdateProductCommand>
 {
-    public UpdateProductDtoValidator()
+    public UpdateProductCommandValidator()
     {
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("Product ID is required");
+
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("Product name is required")
             .MaximumLength(100).WithMessage("Product name cannot exceed 100 characters");

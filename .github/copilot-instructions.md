@@ -1,8 +1,17 @@
 # Project Setup Instructions
 
-## Project Type: .NET Core 8 Web API - Enterprise Edition
+## Project Type: .NET Core 8 Web API - Enterprise Edition with CQRS
 
-This is an enterprise-ready .NET Core 8 Web API with clean architecture.
+This is an enterprise-ready .NET Core 8 Web API implementing Clean Architecture with CQRS pattern.
+
+## Architecture Overview
+
+The application follows Clean Architecture with CQRS (Command Query Responsibility Segregation):
+
+- **API Layer** → Thin controllers dispatching to MediatR
+- **Application Layer** → Commands (writes) and Queries (reads) with handlers
+- **Infrastructure Layer** → Repositories, Unit of Work, EF Core
+- **Domain Layer** → Entities, interfaces, business rules
 
 ## Setup Progress
 
@@ -20,12 +29,22 @@ This is an enterprise-ready .NET Core 8 Web API with clean architecture.
 
 The enterprise-ready .NET Core 8 Web API is now fully set up with:
 
+### Architecture
+
 - Clean Architecture (Domain, Application, Infrastructure, WebApi layers)
+- **CQRS Pattern** using MediatR
+- Commands for write operations (Create, Update, Delete)
+- Queries for read operations (GetAll, GetById, GetByCategory)
+- Proper dependency flow: API → Application/Infrastructure → Domain
+
+### Features
+
 - Entity Framework Core 8 with Repository and Unit of Work patterns
+- **MediatR** for CQRS implementation
 - JWT Authentication
 - Swagger/OpenAPI documentation
 - Serilog logging
-- FluentValidation
+- FluentValidation (integrated with commands/queries)
 - AutoMapper
 - Global error handling middleware
 - Health checks
