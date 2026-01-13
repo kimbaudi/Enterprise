@@ -1,7 +1,7 @@
 using System.CommandLine;
 using Enterprise.Application;
 using Enterprise.Infrastructure;
-using Enterprise.Infrastructure.Data;
+using Enterprise.DataSeeder.Data;
 using Enterprise.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

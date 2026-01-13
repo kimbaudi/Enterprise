@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Enterprise.Infrastructure.Data;
+namespace Enterprise.DataSeeder.Data;
 
 public static class DatabaseSeeder
 {

@@ -1,7 +1,6 @@
 using Asp.Versioning;
 using Enterprise.Application;
 using Enterprise.Infrastructure;
-using Enterprise.Infrastructure.Data;
 using Enterprise.WebApi.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -157,29 +156,6 @@ try
     builder.Services.AddInfrastructure(builder.Configuration);
 
     var app = builder.Build();
-
-    // Seed database with initial data
-    using (var scope = app.Services.CreateScope())
-    {
-        await DatabaseSeeder.SeedDatabaseAsync(scope.ServiceProvider);
-    }
-
-    // // Seed database on startup (optional - comment out for production)
-    // using (var scope = app.Services.CreateScope())
-    // {
-    //     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    //     try
-    //     {
-    //         logger.LogInformation("Checking database seed status...");
-
-    //         // Seed with desired counts (adjust as needed)
-    //         await DatabaseSeeder.SeedDatabaseAsync(scope.ServiceProvider, productCount: 10000, userCount: 1000);
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         logger.LogError(ex, "An error occurred while seeding the database");
-    //     }
-    // }
 
     // Configure the HTTP request pipeline
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
