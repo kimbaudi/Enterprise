@@ -1,5 +1,6 @@
 using EnterpriseApi.Application;
 using EnterpriseApi.Infrastructure;
+using EnterpriseApi.Infrastructure.Data;
 using EnterpriseApi.WebApi.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -114,6 +115,12 @@ try
     builder.Services.AddInfrastructure(builder.Configuration);
 
     var app = builder.Build();
+
+    // Seed database with initial data
+    using (var scope = app.Services.CreateScope())
+    {
+        await DatabaseSeeder.SeedDatabaseAsync(scope.ServiceProvider);
+    }
 
     // Configure the HTTP request pipeline
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();

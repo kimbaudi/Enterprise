@@ -1,4 +1,5 @@
 using EnterpriseApi.Application.Features.Auth.Commands.Login;
+using EnterpriseApi.Application.Features.Auth.Commands.RefreshToken;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -32,11 +33,50 @@ public class AuthController : ControllerBase
     {
         _logger.LogInformation("Login attempt for username: {Username}", request.Username);
 
-        var command = new LoginCommand(request.Username, request.Password);
+        var ipAddress = GetClientIpAddress();
+        var command = new LoginCommand(request.Username, request.Password, ipAddress);
         var response = await _mediator.Send(command);
 
         _logger.LogInformation("Login successful for username: {Username}", request.Username);
         return Ok(response);
+    }
+
+    /// <summary>
+    /// Refresh access token using refresh token
+    /// </summary>
+    /// <param name="request">Refresh token</param>
+    /// <returns>New access token and refresh token</returns>
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<RefreshTokenResponse>> RefreshToken([FromBody] RefreshTokenRequest request)
+    {
+        _logger.LogInformation("Token refresh attempt");
+
+        var ipAddress = GetClientIpAddress();
+        var command = new RefreshTokenCommand(request.RefreshToken, ipAddress);
+        var response = await _mediator.Send(command);
+
+        _logger.LogInformation("Token refresh successful");
+        return Ok(response);
+    }
+
+    private string GetClientIpAddress()
+    {
+        var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            return forwardedFor.Split(',')[0].Trim();
+        }
+
+        var realIp = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(realIp))
+        {
+            return realIp;
+        }
+
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
     }
 
     /// <summary>
@@ -65,4 +105,9 @@ public class LoginRequest
 {
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+}
+
+public class RefreshTokenRequest
+{
+    public string RefreshToken { get; set; } = string.Empty;
 }

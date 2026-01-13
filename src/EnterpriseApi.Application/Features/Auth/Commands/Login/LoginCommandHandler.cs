@@ -1,8 +1,11 @@
+using EnterpriseApi.Application.Common.Interfaces;
+using EnterpriseApi.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace EnterpriseApi.Application.Features.Auth.Commands.Login;
@@ -10,56 +13,100 @@ namespace EnterpriseApi.Application.Features.Auth.Commands.Login;
 public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
 {
     private readonly IConfiguration _configuration;
+    private readonly IUserRepository _userRepository;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly IPasswordHasher _passwordHasher;
+    private readonly IUnitOfWork _unitOfWork;
+    private const int MaxFailedAttempts = 5;
+    private const int LockoutMinutes = 30;
 
-    public LoginCommandHandler(IConfiguration configuration)
+    public LoginCommandHandler(
+        IConfiguration configuration,
+        IUserRepository userRepository,
+        IRefreshTokenRepository refreshTokenRepository,
+        IPasswordHasher passwordHasher,
+        IUnitOfWork unitOfWork)
     {
         _configuration = configuration;
+        _userRepository = userRepository;
+        _refreshTokenRepository = refreshTokenRepository;
+        _passwordHasher = passwordHasher;
+        _unitOfWork = unitOfWork;
     }
 
-    public Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
+    public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
     {
-        // TODO: Replace with actual user validation against database
-        // This is a demo implementation - in production, validate against your user store
-        if (!ValidateCredentials(request.Username, request.Password))
+        // Get user from database with roles
+        var user = await _userRepository.GetByUsernameWithRolesAsync(request.Username, cancellationToken);
+        
+        if (user == null)
         {
             throw new UnauthorizedAccessException("Invalid username or password");
         }
 
-        var token = GenerateJwtToken(request.Username);
-        var expiresAt = DateTime.UtcNow.AddHours(GetTokenExpirationHours());
-
-        var response = new LoginResponse
+        // Check if user is active
+        if (!user.IsActive)
         {
-            Token = token,
-            TokenType = "Bearer",
-            ExpiresAt = expiresAt,
-            Username = request.Username
-        };
-
-        return Task.FromResult(response);
-    }
-
-    private bool ValidateCredentials(string username, string password)
-    {
-        // TODO: Replace with actual database lookup and password hash verification
-        // For demo purposes, accepting any non-empty credentials
-        // In production:
-        // 1. Query user from database by username
-        // 2. Verify password hash using BCrypt, PBKDF2, or similar
-        // 3. Check if account is active, not locked, etc.
-        
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-        {
-            return false;
+            throw new UnauthorizedAccessException("Account is disabled. Please contact support.");
         }
 
-        // Demo: Accept username "admin" with password "password"
-        // Remove this in production!
-        return username.Equals("admin", StringComparison.OrdinalIgnoreCase) && 
-               password == "password";
+        // Check if account is locked out
+        if (user.IsLockedOut)
+        {
+            var remainingMinutes = (int)(user.LockoutEnd!.Value - DateTime.UtcNow).TotalMinutes;
+            throw new UnauthorizedAccessException($"Account is locked. Please try again in {remainingMinutes} minutes.");
+        }
+
+        // Verify password
+        if (!_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
+        {
+            // Increment failed login attempts
+            user.FailedLoginAttempts++;
+            
+            if (user.FailedLoginAttempts >= MaxFailedAttempts)
+            {
+                user.LockoutEnd = DateTime.UtcNow.AddMinutes(LockoutMinutes);
+                await _userRepository.UpdateAsync(user, cancellationToken);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                
+                throw new UnauthorizedAccessException($"Account locked due to too many failed login attempts. Try again in {LockoutMinutes} minutes.");
+            }
+            
+            await _userRepository.UpdateAsync(user, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            
+            throw new UnauthorizedAccessException("Invalid username or password");
+        }
+
+        // Reset failed login attempts on successful login
+        user.FailedLoginAttempts = 0;
+        user.LockoutEnd = null;
+        user.LastLoginAt = DateTime.UtcNow;
+        await _userRepository.UpdateAsync(user, cancellationToken);
+
+        // Generate tokens
+        var accessToken = GenerateJwtToken(user);
+        var refreshToken = await GenerateRefreshToken(user.Id, request.IpAddress, cancellationToken);
+        
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var expiresAt = DateTime.UtcNow.AddHours(GetTokenExpirationHours());
+
+        return new LoginResponse
+        {
+            Token = accessToken,
+            RefreshToken = refreshToken.Token,
+            TokenType = "Bearer",
+            ExpiresAt = expiresAt,
+            Username = user.Username,
+            Email = user.Email,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList()
+        };
     }
 
-    private string GenerateJwtToken(string username)
+    private string GenerateJwtToken(Domain.Entities.User user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456";
@@ -70,15 +117,21 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, username),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Username),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-            new Claim(ClaimTypes.Name, username),
-            // Add additional claims as needed (roles, permissions, etc.)
-            // new Claim(ClaimTypes.Role, "Admin"),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Email, user.Email)
         };
+
+        // Add role claims
+        foreach (var userRole in user.UserRoles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+        }
 
         var token = new JwtSecurityToken(
             issuer: issuer,
@@ -89,6 +142,29 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private async Task<Domain.Entities.RefreshToken> GenerateRefreshToken(int userId, string ipAddress, CancellationToken cancellationToken)
+    {
+        var refreshToken = new Domain.Entities.RefreshToken
+        {
+            UserId = userId,
+            Token = GenerateSecureToken(),
+            ExpiresAt = DateTime.UtcNow.AddDays(7), // Refresh token valid for 7 days
+            CreatedAt = DateTime.UtcNow,
+            CreatedByIp = ipAddress
+        };
+
+        await _refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
+        return refreshToken;
+    }
+
+    private string GenerateSecureToken()
+    {
+        var randomNumber = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
     }
 
     private int GetTokenExpirationHours()

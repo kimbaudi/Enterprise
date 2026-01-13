@@ -1,6 +1,8 @@
+using EnterpriseApi.Application.Common.Interfaces;
 using EnterpriseApi.Domain.Interfaces;
 using EnterpriseApi.Infrastructure.Persistence;
 using EnterpriseApi.Infrastructure.Repositories;
+using EnterpriseApi.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,6 +22,11 @@ public static class DependencyInjection
         // Repositories
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        
+        // Services
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         return services;
     }
