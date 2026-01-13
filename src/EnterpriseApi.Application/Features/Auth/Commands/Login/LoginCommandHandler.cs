@@ -2,11 +2,6 @@ using EnterpriseApi.Application.Common.Interfaces;
 using EnterpriseApi.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 
 namespace EnterpriseApi.Application.Features.Auth.Commands.Login;
 
@@ -16,6 +11,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IJwtTokenService _jwtTokenService;
     private readonly IUnitOfWork _unitOfWork;
     private const int MaxFailedAttempts = 5;
     private const int LockoutMinutes = 30;
@@ -25,12 +21,14 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         IUserRepository userRepository,
         IRefreshTokenRepository refreshTokenRepository,
         IPasswordHasher passwordHasher,
+        IJwtTokenService jwtTokenService,
         IUnitOfWork unitOfWork)
     {
         _configuration = configuration;
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _passwordHasher = passwordHasher;
+        _jwtTokenService = jwtTokenService;
         _unitOfWork = unitOfWork;
     }
 
@@ -85,8 +83,9 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         await _userRepository.UpdateAsync(user, cancellationToken);
 
         // Generate tokens
-        var accessToken = GenerateJwtToken(user);
-        var refreshToken = await GenerateRefreshToken(user.Id, request.IpAddress, cancellationToken);
+        var accessToken = _jwtTokenService.GenerateAccessToken(user);
+        var refreshToken = _jwtTokenService.GenerateRefreshToken(user.Id, request.IpAddress);
+        await _refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
         
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -104,67 +103,6 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
             LastName = user.LastName,
             Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList()
         };
-    }
-
-    private string GenerateJwtToken(Domain.Entities.User user)
-    {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456";
-        var issuer = jwtSettings["Issuer"] ?? "EnterpriseAPI";
-        var audience = jwtSettings["Audience"] ?? "EnterpriseAPIUsers";
-        var expirationHours = GetTokenExpirationHours();
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var claims = new List<Claim>
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Username),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Email, user.Email)
-        };
-
-        // Add role claims
-        foreach (var userRole in user.UserRoles)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
-        }
-
-        var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(expirationHours),
-            signingCredentials: credentials
-        );
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    private async Task<Domain.Entities.RefreshToken> GenerateRefreshToken(int userId, string ipAddress, CancellationToken cancellationToken)
-    {
-        var refreshToken = new Domain.Entities.RefreshToken
-        {
-            UserId = userId,
-            Token = GenerateSecureToken(),
-            ExpiresAt = DateTime.UtcNow.AddDays(7), // Refresh token valid for 7 days
-            CreatedAt = DateTime.UtcNow,
-            CreatedByIp = ipAddress
-        };
-
-        await _refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
-        return refreshToken;
-    }
-
-    private string GenerateSecureToken()
-    {
-        var randomNumber = new byte[64];
-        using var rng = RandomNumberGenerator.Create();
-        rng.GetBytes(randomNumber);
-        return Convert.ToBase64String(randomNumber);
     }
 
     private int GetTokenExpirationHours()

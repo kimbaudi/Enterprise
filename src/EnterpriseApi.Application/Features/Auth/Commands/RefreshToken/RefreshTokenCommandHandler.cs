@@ -1,5 +1,4 @@
 using EnterpriseApi.Application.Common.Interfaces;
-using EnterpriseApi.Domain.Entities;
 using EnterpriseApi.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Configuration;
@@ -20,17 +19,20 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
 {
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IJwtTokenService _jwtTokenService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IConfiguration _configuration;
 
     public RefreshTokenCommandHandler(
         IRefreshTokenRepository refreshTokenRepository,
         IUserRepository userRepository,
+        IJwtTokenService jwtTokenService,
         IUnitOfWork unitOfWork,
         IConfiguration configuration)
     {
         _refreshTokenRepository = refreshTokenRepository;
         _userRepository = userRepository;
+        _jwtTokenService = jwtTokenService;
         _unitOfWork = unitOfWork;
         _configuration = configuration;
     }
@@ -56,22 +58,14 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         refreshToken.RevokedByIp = request.IpAddress;
         
         // Generate new tokens
-        var newRefreshToken = new Domain.Entities.RefreshToken
-        {
-            UserId = user.Id,
-            Token = GenerateSecureToken(),
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
-            CreatedAt = DateTime.UtcNow,
-            CreatedByIp = request.IpAddress
-        };
-
+        var newRefreshToken = _jwtTokenService.GenerateRefreshToken(user.Id, request.IpAddress);
         refreshToken.ReplacedByToken = newRefreshToken.Token;
         
         await _refreshTokenRepository.UpdateAsync(refreshToken, cancellationToken);
         await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var accessToken = GenerateJwtToken(user);
+        var accessToken = _jwtTokenService.GenerateAccessToken(user);
         var expiresAt = DateTime.UtcNow.AddHours(GetTokenExpirationHours());
 
         return new RefreshTokenResponse
@@ -81,51 +75,6 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
             TokenType = "Bearer",
             ExpiresAt = expiresAt
         };
-    }
-
-    private string GenerateJwtToken(User user)
-    {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456";
-        var issuer = jwtSettings["Issuer"] ?? "EnterpriseAPI";
-        var audience = jwtSettings["Audience"] ?? "EnterpriseAPIUsers";
-        var expirationHours = GetTokenExpirationHours();
-
-        var key = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(secretKey));
-        var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(key, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
-
-        var claims = new List<System.Security.Claims.Claim>
-        {
-            new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, user.Username),
-            new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new System.Security.Claims.Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString()),
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Name, user.Username),
-            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Email, user.Email)
-        };
-
-        foreach (var userRole in user.UserRoles)
-        {
-            claims.Add(new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, userRole.Role.Name));
-        }
-
-        var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(expirationHours),
-            signingCredentials: credentials
-        );
-
-        return new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    private string GenerateSecureToken()
-    {
-        var randomNumber = new byte[64];
-        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
-        rng.GetBytes(randomNumber);
-        return Convert.ToBase64String(randomNumber);
     }
 
     private int GetTokenExpirationHours()
