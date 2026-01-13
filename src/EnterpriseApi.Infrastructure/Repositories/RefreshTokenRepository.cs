@@ -21,7 +21,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
             .FirstOrDefaultAsync(rt => rt.Token == token, cancellationToken);
     }
 
-    public async Task<IEnumerable<RefreshToken>> GetActiveTokensByUserIdAsync(int userId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<RefreshToken>> GetActiveTokensByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await _context.RefreshTokens
             .Where(rt => rt.UserId == userId && 
@@ -42,7 +42,7 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         return Task.CompletedTask;
     }
 
-    public async Task RevokeAllUserTokensAsync(int userId, CancellationToken cancellationToken = default)
+    public async Task RevokeAllUserTokensAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var tokens = await _context.RefreshTokens
             .Where(rt => rt.UserId == userId && rt.RevokedAt == null)

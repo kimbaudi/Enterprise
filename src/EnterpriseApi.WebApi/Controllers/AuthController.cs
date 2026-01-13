@@ -1,5 +1,6 @@
 using EnterpriseApi.Application.Features.Auth.Commands.Login;
 using EnterpriseApi.Application.Features.Auth.Commands.RefreshToken;
+using EnterpriseApi.Application.Features.Auth.Commands.Register;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,35 @@ public class AuthController : ControllerBase
     {
         _mediator = mediator;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Register a new user account
+    /// </summary>
+    /// <param name="request">Registration details</param>
+    /// <returns>Registration confirmation</returns>
+    [HttpPost("register")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<RegisterResponse>> Register([FromBody] RegisterRequest request)
+    {
+        _logger.LogInformation("Registration attempt for username: {Username}", request.Username);
+
+        var ipAddress = GetClientIpAddress();
+        var command = new RegisterCommand(
+            request.Username,
+            request.Email,
+            request.Password,
+            request.ConfirmPassword,
+            request.FirstName,
+            request.LastName,
+            ipAddress);
+
+        var response = await _mediator.Send(command);
+
+        _logger.LogInformation("Registration successful for username: {Username}", request.Username);
+        return CreatedAtAction(nameof(Register), new { id = response.Id }, response);
     }
 
     /// <summary>
@@ -105,6 +135,16 @@ public class LoginRequest
 {
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
+}
+
+public class RegisterRequest
+{
+    public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string ConfirmPassword { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string LastName { get; set; } = string.Empty;
 }
 
 public class RefreshTokenRequest

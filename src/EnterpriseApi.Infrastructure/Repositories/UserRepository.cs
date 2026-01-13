@@ -14,7 +14,7 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
-    public async Task<User?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.Users.FindAsync(new object[] { id }, cancellationToken);
     }
@@ -59,7 +59,7 @@ public class UserRepository : IUserRepository
         return Task.CompletedTask;
     }
 
-    public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var user = await GetByIdAsync(id, cancellationToken);
         if (user != null)

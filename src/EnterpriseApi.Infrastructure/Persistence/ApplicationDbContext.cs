@@ -106,9 +106,9 @@ public class ApplicationDbContext : DbContext
 
             // Seed default roles
             entity.HasData(
-                new Role { Id = 1, Name = "Admin", Description = "Administrator with full access" },
-                new Role { Id = 2, Name = "User", Description = "Regular user with limited access" },
-                new Role { Id = 3, Name = "Manager", Description = "Manager with elevated permissions" }
+                new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000001"), Name = "Admin", Description = "Administrator with full access" },
+                new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000002"), Name = "User", Description = "Regular user with limited access" },
+                new Role { Id = Guid.Parse("00000000-0000-0000-0000-000000000003"), Name = "Manager", Description = "Manager with elevated permissions" }
             );
         });
 

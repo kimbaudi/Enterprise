@@ -56,14 +56,13 @@ public class JwtTokenService : IJwtTokenService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public RefreshToken GenerateRefreshToken(int userId, string ipAddress)
+    public RefreshToken GenerateRefreshToken(Guid userId, string ipAddress)
     {
         return new RefreshToken
         {
             UserId = userId,
             Token = GenerateSecureToken(),
             ExpiresAt = DateTime.UtcNow.AddDays(7), // Refresh token valid for 7 days
-            CreatedAt = DateTime.UtcNow,
             CreatedByIp = ipAddress
         };
     }

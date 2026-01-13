@@ -1,8 +1,9 @@
+using EnterpriseApi.Domain.Common;
+
 namespace EnterpriseApi.Domain.Entities;
 
-public class User
+public class User : BaseEntity
 {
-    public int Id { get; set; }
     public string Username { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;
@@ -11,7 +12,6 @@ public class User
     public bool IsActive { get; set; } = true;
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }
-    public DateTime CreatedAt { get; set; }
     public DateTime? LastLoginAt { get; set; }
     
     // Navigation property for roles

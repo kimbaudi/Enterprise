@@ -15,5 +15,11 @@ public class ValidationException : Exception
             .ToDictionary(failureGroup => failureGroup.Key, failureGroup => failureGroup.ToArray());
     }
 
+    public ValidationException(IDictionary<string, string[]> errors)
+        : base("One or more validation failures have occurred.")
+    {
+        Errors = errors;
+    }
+
     public IDictionary<string, string[]> Errors { get; }
 }
