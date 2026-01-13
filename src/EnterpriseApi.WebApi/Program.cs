@@ -164,6 +164,23 @@ try
         await DatabaseSeeder.SeedDatabaseAsync(scope.ServiceProvider);
     }
 
+    // Seed database on startup (optional - comment out for production)
+    using (var scope = app.Services.CreateScope())
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        try
+        {
+            logger.LogInformation("Checking database seed status...");
+            
+            // Seed with desired counts (adjust as needed)
+            await DatabaseSeeder.SeedDatabaseAsync(scope.ServiceProvider, productCount: 10000, userCount: 1000);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while seeding the database");
+        }
+    }
+
     // Configure the HTTP request pipeline
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
