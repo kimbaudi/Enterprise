@@ -26,10 +26,10 @@ try
 
     // Add services to the container
     builder.Services.AddControllers();
-    
+
     // Add Response Caching
     builder.Services.AddResponseCaching();
-    
+
     // Add API Versioning
     builder.Services.AddApiVersioning(options =>
     {
@@ -41,7 +41,7 @@ try
             new HeaderApiVersionReader("X-Api-Version"),
             new MediaTypeApiVersionReader("ver"));
     }).AddMvc();
-    
+
     builder.Services.AddEndpointsApiExplorer();
 
     // Configure Swagger/OpenAPI
@@ -103,9 +103,9 @@ try
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
             ValidateIssuer = true,
-            ValidIssuer = jwtSettings["Issuer"] ?? "EnterpriseAPI",
+            ValidIssuer = jwtSettings["Issuer"] ?? "Enterprise",
             ValidateAudience = true,
-            ValidAudience = jwtSettings["Audience"] ?? "EnterpriseAPIUsers",
+            ValidAudience = jwtSettings["Audience"] ?? "EnterpriseUsers",
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
@@ -122,7 +122,7 @@ try
                   .AllowAnyMethod()
                   .AllowAnyHeader();
         });
-        
+
         // Production-ready CORS policy (configure allowed origins as needed)
         options.AddPolicy("Production", policy =>
         {
@@ -133,7 +133,7 @@ try
                   .SetIsOriginAllowedToAllowWildcardSubdomains();
         });
     });
-    
+
     // Add HSTS
     if (!builder.Environment.IsDevelopment())
     {
@@ -148,8 +148,8 @@ try
     // Add Health Checks
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     builder.Services.AddHealthChecks()
-        .AddSqlServer(connectionString ?? throw new InvalidOperationException("Connection string not found"), 
-            name: "database", 
+        .AddSqlServer(connectionString ?? throw new InvalidOperationException("Connection string not found"),
+            name: "database",
             tags: new[] { "db", "sql", "ready" });
 
     // Add Application and Infrastructure layers
@@ -171,7 +171,7 @@ try
         try
         {
             logger.LogInformation("Checking database seed status...");
-            
+
             // Seed with desired counts (adjust as needed)
             await DatabaseSeeder.SeedDatabaseAsync(scope.ServiceProvider, productCount: 10000, userCount: 1000);
         }
@@ -199,10 +199,10 @@ try
     }
 
     app.UseHttpsRedirection();
-    
+
     // Add Response Caching Middleware
     app.UseResponseCaching();
-    
+
     // Add security headers
     app.Use(async (context, next) =>
     {
@@ -219,7 +219,7 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
-    
+
     // Health check endpoints
     app.MapHealthChecks("/health");
     app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions

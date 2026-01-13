@@ -11,8 +11,8 @@ This project follows **Clean Architecture** with **CQRS (Command Query Responsib
 ```
 Enterprise/
 ├── src/
-│   ├── EnterpriseApi.Domain/          # Domain entities and interfaces
-│   ├── EnterpriseApi.Application/     # CQRS Commands, Queries, Handlers
+│   ├── Enterprise.Domain/          # Domain entities and interfaces
+│   ├── Enterprise.Application/     # CQRS Commands, Queries, Handlers
 │   │   ├── Features/
 │   │   │   └── Products/
 │   │   │       ├── Commands/          # Write operations (Create, Update, Delete)
@@ -21,17 +21,17 @@ Enterprise/
 │   │       ├── Behaviors/             # MediatR pipeline behaviors
 │   │       ├── Exceptions/            # Custom exceptions
 │   │       └── Models/                # Shared models (Pagination, etc.)
-│   ├── EnterpriseApi.Infrastructure/  # Data access, EF Core, repositories
-│   └── EnterpriseApi.WebApi/          # API controllers, middleware
+│   ├── Enterprise.Infrastructure/  # Data access, EF Core, repositories
+│   └── Enterprise.WebApi/          # API controllers, middleware
 ├── tests/
-│   └── EnterpriseApi.Application.Tests/ # Unit tests
+│   └── Enterprise.Application.Tests/ # Unit tests
 ├── docs/
 │   └── CQRS-ARCHITECTURE.md           # Detailed architecture guide
 ├── .github/
 │   └── copilot-instructions.md
 ├── Dockerfile
 ├── docker-compose.yml
-└── EnterpriseApi.sln
+└── Enterprise.sln
 ```
 
 ### Dependency Flow
@@ -104,11 +104,11 @@ Request → Logging → Validation → Performance → Handler → Response
 
 2. **Update the connection string**
 
-   Edit `src/EnterpriseApi.WebApi/appsettings.json`:
+   Edit `src/Enterprise.WebApi/appsettings.json`:
 
    ```json
    "ConnectionStrings": {
-     "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=EnterpriseApiDb;Trusted_Connection=true;MultipleActiveResultSets=true"
+     "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=EnterpriseDb;Trusted_Connection=true;MultipleActiveResultSets=true"
    }
    ```
 
@@ -121,8 +121,8 @@ Request → Logging → Validation → Performance → Handler → Response
 4. **Apply database migrations**
 
    ```bash
-   dotnet ef migrations add InitialCreate --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
-   dotnet ef database update --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
+   dotnet ef migrations add InitialCreate --project src/Enterprise.Infrastructure --startup-project src/Enterprise.WebApi
+   dotnet ef database update --project src/Enterprise.Infrastructure --startup-project src/Enterprise.WebApi
    ```
 
 5. **Seed the database (optional but recommended)**
@@ -148,7 +148,7 @@ Request → Logging → Validation → Performance → Handler → Response
 7. **Run the application**
 
    ```bash
-   cd src/EnterpriseApi.WebApi
+   cd src/Enterprise.WebApi
    dotnet run
    ```
 
@@ -218,7 +218,7 @@ docker run -p 5000:80 enterprise-api
 For **development**, use User Secrets:
 
 ```bash
-cd src/EnterpriseApi.WebApi
+cd src/Enterprise.WebApi
 dotnet user-secrets init
 dotnet user-secrets set "JwtSettings:SecretKey" "YourSecretKeyHere_Min32Characters!"
 ```
@@ -327,8 +327,8 @@ Contains API controllers and middleware:
 ### Creating Migrations
 
 ```bash
-dotnet ef migrations add MigrationName --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
-dotnet ef database update --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
+dotnet ef migrations add MigrationName --project src/Enterprise.Infrastructure --startup-project src/Enterprise.WebApi
+dotnet ef database update --project src/Enterprise.Infrastructure --startup-project src/Enterprise.WebApi
 ```
 
 ## 📝 Best Practices Implemented

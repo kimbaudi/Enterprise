@@ -58,7 +58,7 @@ POST /api/v1/auth/login
 ### 1. Setup JWT User Secrets (Development)
 
 ```bash
-cd src/EnterpriseApi.WebApi
+cd src/Enterprise.WebApi
 dotnet user-secrets init
 dotnet user-secrets set "JwtSettings:SecretKey" "YourSecretKey_Min32Chars!"
 ```
@@ -158,14 +158,14 @@ You now have:
 
 ### Soon (Recommended)
 
-4. Add rate limiting for DDoS protection
+1. Add rate limiting for DDoS protection
 2. Implement Result pattern for better error handling
 3. Add integration tests
 4. Setup Application Insights/telemetry
 
 ### Later (Nice to Have)
 
-8. Add Specification pattern for complex queries
+1. Add Specification pattern for complex queries
 2. Implement output caching (.NET 8 feature)
 3. Add API documentation with XML comments
 

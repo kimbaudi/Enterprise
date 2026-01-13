@@ -112,12 +112,12 @@ All components have been successfully implemented, tested, and documented.
 ```
 Enterprise/
 ├── src/
-│   ├── EnterpriseApi.Domain/
+│   ├── Enterprise.Domain/
 │   │   ├── Common/BaseEntity.cs
 │   │   ├── Entities/Product.cs
 │   │   └── Interfaces/IRepository.cs, IUnitOfWork.cs
 │   │
-│   ├── EnterpriseApi.Application/
+│   ├── Enterprise.Application/
 │   │   ├── Features/Products/
 │   │   │   ├── Commands/
 │   │   │   │   ├── CreateProduct/
@@ -141,19 +141,19 @@ Enterprise/
 │   │   │       └── PaginatedResult.cs
 │   │   └── DependencyInjection.cs
 │   │
-│   ├── EnterpriseApi.Infrastructure/
+│   ├── Enterprise.Infrastructure/
 │   │   ├── Persistence/ApplicationDbContext.cs
 │   │   ├── Repositories/Repository.cs, UnitOfWork.cs
 │   │   └── DependencyInjection.cs
 │   │
-│   └── EnterpriseApi.WebApi/
+│   └── Enterprise.WebApi/
 │       ├── Controllers/ProductsController.cs
 │       ├── Middleware/GlobalExceptionHandlerMiddleware.cs
 │       ├── Program.cs
 │       └── appsettings.json
 │
 ├── tests/
-│   └── EnterpriseApi.Application.Tests/
+│   └── Enterprise.Application.Tests/
 │       ├── Features/Products/
 │       │   ├── Commands/CreateProductCommandHandlerTests.cs
 │       │   └── Queries/GetProductByIdQueryHandlerTests.cs
@@ -168,7 +168,7 @@ Enterprise/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── README.md
-└── EnterpriseApi.sln
+└── Enterprise.sln
 ```
 
 ## 🔄 Request Flow
@@ -220,7 +220,7 @@ dotnet test
 ### Run Application
 
 ```bash
-cd src/EnterpriseApi.WebApi
+cd src/Enterprise.WebApi
 dotnet run
 ```
 
@@ -233,8 +233,8 @@ https://localhost:5001
 ### Create Database
 
 ```bash
-dotnet ef migrations add InitialCreate --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
-dotnet ef database update --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
+dotnet ef migrations add InitialCreate --project src/Enterprise.Infrastructure --startup-project src/Enterprise.WebApi
+dotnet ef database update --project src/Enterprise.Infrastructure --startup-project src/Enterprise.WebApi
 ```
 
 ## 📚 Documentation

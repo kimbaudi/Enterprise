@@ -4,7 +4,7 @@ using FluentValidation;
 using FluentValidation.Results;
 using MediatR;
 using Moq;
-using ValidationException = EnterpriseApi.Application.Common.Exceptions.ValidationException;
+using ValidationException = Enterprise.Application.Common.Exceptions.ValidationException;
 
 namespace Enterprise.Application.Tests.Common.Behaviors;
 
@@ -29,10 +29,10 @@ public class ValidationBehaviorTests
         // Arrange
         var validators = new List<IValidator<TestCommand>>();
         var behavior = new ValidationBehavior<TestCommand, string>(validators);
-        
+
         var request = new TestCommand { Name = "Test" };
         var handlerCalled = false;
-        
+
         Task<string> Next(CancellationToken ct)
         {
             handlerCalled = true;
@@ -56,10 +56,10 @@ public class ValidationBehaviorTests
             new TestCommandValidator()
         };
         var behavior = new ValidationBehavior<TestCommand, string>(validators);
-        
+
         var request = new TestCommand { Name = "Valid Name" };
         var handlerCalled = false;
-        
+
         Task<string> Next(CancellationToken ct)
         {
             handlerCalled = true;
@@ -83,9 +83,9 @@ public class ValidationBehaviorTests
             new TestCommandValidator()
         };
         var behavior = new ValidationBehavior<TestCommand, string>(validators);
-        
+
         var request = new TestCommand { Name = "" }; // Invalid
-        
+
         Task<string> Next(CancellationToken ct)
         {
             return Task.FromResult("Success");
@@ -110,9 +110,9 @@ public class ValidationBehaviorTests
 
         var validators = new List<IValidator<TestCommand>> { validator };
         var behavior = new ValidationBehavior<TestCommand, string>(validators);
-        
+
         var request = new TestCommand { Name = "" };
-        
+
         Task<string> Next(CancellationToken ct) => Task.FromResult("Success");
 
         // Act

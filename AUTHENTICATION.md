@@ -74,7 +74,7 @@ Authenticate user and receive tokens.
   "tokenType": "Bearer",
   "expiresAt": "2026-01-13T12:00:00Z",
   "username": "admin",
-  "email": "admin@enterpriseapi.com",
+  "email": "admin@enterprise.com",
   "firstName": "System",
   "lastName": "Administrator",
   "roles": ["Admin"]
@@ -123,7 +123,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1Ni...
   "claims": [
     { "type": "sub", "value": "admin" },
     { "type": "role", "value": "Admin" },
-    { "type": "email", "value": "admin@enterpriseapi.com" }
+    { "type": "email", "value": "admin@enterprise.com" }
   ]
 }
 ```
@@ -137,41 +137,41 @@ The system seeds three default users on first run:
 - **Username:** `admin`
 - **Password:** `Admin@123`
 - **Role:** Admin
-- **Email:** <admin@enterpriseapi.com>
+- **Email:** <admin@enterprise.com>
 
 ### Manager User
 
 - **Username:** `manager`
 - **Password:** `Manager@123`
 - **Role:** Manager
-- **Email:** <manager@enterpriseapi.com>
+- **Email:** <manager@enterprise.com>
 
 ### Regular User
 
 - **Username:** `user`
 - **Password:** `User@123`
 - **Role:** User
-- **Email:** <user@enterpriseapi.com>
+- **Email:** <user@enterprise.com>
 
 ## Running the Application
 
 ### 1. Create Initial Migration
 
 ```bash
-cd src/EnterpriseApi.Infrastructure
-dotnet ef migrations add AddAuthenticationTables --startup-project ../EnterpriseApi.WebApi
+cd src/Enterprise.Infrastructure
+dotnet ef migrations add AddAuthenticationTables --startup-project ../Enterprise.WebApi
 ```
 
 ### 2. Update Database
 
 ```bash
-dotnet ef database update --startup-project ../EnterpriseApi.WebApi
+dotnet ef database update --startup-project ../Enterprise.WebApi
 ```
 
 ### 3. Run Application
 
 ```bash
-cd ../EnterpriseApi.WebApi
+cd ../Enterprise.WebApi
 dotnet run
 ```
 
@@ -185,8 +185,8 @@ Edit `appsettings.json` to configure JWT settings:
 {
   "JwtSettings": {
     "SecretKey": "YourSuperSecretKeyForJWTTokenGeneration123456",
-    "Issuer": "EnterpriseAPI",
-    "Audience": "EnterpriseAPIUsers",
+    "Issuer": "Enterprise",
+    "Audience": "EnterpriseUsers",
     "ExpirationHours": 24
   }
 }

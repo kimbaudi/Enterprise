@@ -125,7 +125,7 @@ Edit `appsettings.json` to configure:
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=EnterpriseApiDb;Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=true"
+    "DefaultConnection": "Server=(localdb)\\mssqllocaldb;Database=EnterpriseDb;Trusted_Connection=true;MultipleActiveResultSets=true;TrustServerCertificate=true"
   }
 }
 ```

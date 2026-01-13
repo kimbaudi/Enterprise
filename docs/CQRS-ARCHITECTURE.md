@@ -9,13 +9,13 @@ This application implements **CQRS (Command Query Responsibility Segregation)** 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    Presentation Layer                    │
-│                   (EnterpriseApi.WebApi)                 │
+│                   (Enterprise.WebApi)                 │
 │  Controllers → IMediator → Commands/Queries              │
 └─────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────┐
 │                   Application Layer                      │
-│              (EnterpriseApi.Application)                 │
+│              (Enterprise.Application)                 │
 │                                                           │
 │  ┌──────────────────┐        ┌──────────────────┐      │
 │  │    Commands      │        │     Queries      │      │
@@ -31,13 +31,13 @@ This application implements **CQRS (Command Query Responsibility Segregation)** 
                             ↓
 ┌─────────────────────────────────────────────────────────┐
 │                 Infrastructure Layer                     │
-│             (EnterpriseApi.Infrastructure)               │
+│             (Enterprise.Infrastructure)               │
 │  Repositories → Unit of Work → Database                 │
 └─────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────┐
 │                     Domain Layer                         │
-│                (EnterpriseApi.Domain)                    │
+│                (Enterprise.Domain)                    │
 │  Entities, Interfaces, Business Rules                    │
 └─────────────────────────────────────────────────────────┘
 ```

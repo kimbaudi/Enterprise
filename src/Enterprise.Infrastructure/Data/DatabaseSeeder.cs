@@ -70,9 +70,9 @@ public static class DatabaseSeeder
     }
 
     private static async Task SeedDefaultUsersAsync(
-        ApplicationDbContext context, 
-        IPasswordHasher passwordHasher, 
-        ILogger logger, 
+        ApplicationDbContext context,
+        IPasswordHasher passwordHasher,
+        ILogger logger,
         Dictionary<string, Role> roles)
     {
         if (await context.Users.AnyAsync())
@@ -86,7 +86,7 @@ public static class DatabaseSeeder
         var adminUser = new User
         {
             Username = "admin",
-            Email = "admin@enterpriseapi.com",
+            Email = "admin@enterprise.com",
             PasswordHash = passwordHasher.HashPassword("Admin@123"),
             FirstName = "System",
             LastName = "Administrator",
@@ -97,7 +97,7 @@ public static class DatabaseSeeder
         var regularUser = new User
         {
             Username = "user",
-            Email = "user@enterpriseapi.com",
+            Email = "user@enterprise.com",
             PasswordHash = passwordHasher.HashPassword("User@123"),
             FirstName = "Regular",
             LastName = "User",
@@ -108,7 +108,7 @@ public static class DatabaseSeeder
         var managerUser = new User
         {
             Username = "manager",
-            Email = "manager@enterpriseapi.com",
+            Email = "manager@enterprise.com",
             PasswordHash = passwordHasher.HashPassword("Manager@123"),
             FirstName = "Department",
             LastName = "Manager",
@@ -137,9 +137,9 @@ public static class DatabaseSeeder
     }
 
     private static async Task SeedBulkUsersAsync(
-        ApplicationDbContext context, 
-        IPasswordHasher passwordHasher, 
-        ILogger logger, 
+        ApplicationDbContext context,
+        IPasswordHasher passwordHasher,
+        ILogger logger,
         int count,
         Dictionary<string, Role> roles)
     {
@@ -167,7 +167,7 @@ public static class DatabaseSeeder
                 var globalIndex = batch * batchSize + i;
                 var firstName = _firstNames[_random.Next(_firstNames.Length)];
                 var lastName = _lastNames[_random.Next(_lastNames.Length)];
-                
+
                 var user = new User
                 {
                     Id = Guid.NewGuid(),
@@ -184,14 +184,14 @@ public static class DatabaseSeeder
 
                 // Assign random role (70% User, 20% Manager, 10% Admin)
                 var roleChance = _random.Next(100);
-                var assignedRole = roleChance < 70 ? roles["User"] : 
-                                  roleChance < 90 ? roles["Manager"] : 
+                var assignedRole = roleChance < 70 ? roles["User"] :
+                                  roleChance < 90 ? roles["Manager"] :
                                   roles["Admin"];
 
-                userRolesList.Add(new UserRole 
-                { 
-                    UserId = user.Id, 
-                    RoleId = assignedRole.Id 
+                userRolesList.Add(new UserRole
+                {
+                    UserId = user.Id,
+                    RoleId = assignedRole.Id
                 });
             }
 

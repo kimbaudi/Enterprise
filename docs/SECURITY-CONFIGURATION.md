@@ -15,7 +15,7 @@ User Secrets is a secure way to store sensitive data during development. The sec
 1. **Initialize User Secrets** (from the WebApi project directory):
 
    ```bash
-   cd src/EnterpriseApi.WebApi
+   cd src/Enterprise.WebApi
    dotnet user-secrets init
    ```
 
@@ -23,8 +23,8 @@ User Secrets is a secure way to store sensitive data during development. The sec
 
    ```bash
    dotnet user-secrets set "JwtSettings:SecretKey" "YourStrongSecretKeyHere_Min32Characters!"
-   dotnet user-secrets set "JwtSettings:Issuer" "EnterpriseAPI"
-   dotnet user-secrets set "JwtSettings:Audience" "EnterpriseAPIUsers"
+   dotnet user-secrets set "JwtSettings:Issuer" "Enterprise"
+   dotnet user-secrets set "JwtSettings:Audience" "EnterpriseUsers"
    dotnet user-secrets set "JwtSettings:ExpirationHours" "24"
    ```
 
@@ -39,8 +39,8 @@ User Secrets is a secure way to store sensitive data during development. The sec
    ```json
    "JwtSettings": {
      "SecretKey": "",  // Leave empty or remove - will use User Secrets
-     "Issuer": "EnterpriseAPI",
-     "Audience": "EnterpriseAPIUsers",
+     "Issuer": "Enterprise",
+     "Audience": "EnterpriseUsers",
      "ExpirationHours": 24
    }
    ```
@@ -60,16 +60,16 @@ For production, use environment variables or a secure secret management system:
 
 ```bash
 export JwtSettings__SecretKey="YourProductionSecretKey"
-export JwtSettings__Issuer="EnterpriseAPI"
-export JwtSettings__Audience="EnterpriseAPIUsers"
+export JwtSettings__Issuer="Enterprise"
+export JwtSettings__Audience="EnterpriseUsers"
 ```
 
 Windows PowerShell:
 
 ```powershell
 $env:JwtSettings__SecretKey="YourProductionSecretKey"
-$env:JwtSettings__Issuer="EnterpriseAPI"
-$env:JwtSettings__Audience="EnterpriseAPIUsers"
+$env:JwtSettings__Issuer="Enterprise"
+$env:JwtSettings__Audience="EnterpriseUsers"
 ```
 
 ### Option 2: Azure Key Vault (Recommended for Azure)
@@ -178,7 +178,7 @@ if (string.IsNullOrEmpty(jwtSecret))
 Similarly, database connection strings should also be secured:
 
 ```bash
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=EnterpriseApiDb;User Id=sa;Password=YourPassword;"
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=EnterpriseDb;User Id=sa;Password=YourPassword;"
 ```
 
 ## .gitignore

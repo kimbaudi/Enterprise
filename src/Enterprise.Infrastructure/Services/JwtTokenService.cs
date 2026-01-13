@@ -22,8 +22,8 @@ public class JwtTokenService : IJwtTokenService
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456";
-        var issuer = jwtSettings["Issuer"] ?? "EnterpriseAPI";
-        var audience = jwtSettings["Audience"] ?? "EnterpriseAPIUsers";
+        var issuer = jwtSettings["Issuer"] ?? "Enterprise";
+        var audience = jwtSettings["Audience"] ?? "EnterpriseUsers";
         var expirationHours = GetTokenExpirationHours();
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));

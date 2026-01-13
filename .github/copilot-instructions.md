@@ -88,7 +88,7 @@ public class {Feature}Controller : ControllerBase
 
 ## Testing Pattern
 
-**Location**: `tests/EnterpriseApi.Application.Tests/Features/{Feature}/{Commands|Queries}/`
+**Location**: `tests/Enterprise.Application.Tests/Features/{Feature}/{Commands|Queries}/`
 
 **Setup**:
 
@@ -108,13 +108,13 @@ private readonly Mock<IMapper> _mapperMock;
 
 ```bash
 # Create migration
-dotnet ef migrations add {MigrationName} --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
+dotnet ef migrations add {MigrationName} --project src/Enterprise.Infrastructure --startup-project src/Enterprise.WebApi
 
 # Apply migration
-dotnet ef database update --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
+dotnet ef database update --project src/Enterprise.Infrastructure --startup-project src/Enterprise.WebApi
 
 # Seed data (10k products, 1k users)
-cd src/EnterpriseApi.DataSeeder && dotnet run
+cd src/Enterprise.DataSeeder && dotnet run
 ```
 
 **Repository Pattern**: Use `IRepository<T>` and `IUnitOfWork`, never inject `ApplicationDbContext` into handlers.
@@ -145,7 +145,7 @@ Login via `POST /api/v1/auth/login` to get JWT token. Use in Swagger or as `Auth
 ```bash
 dotnet build          # Build solution
 dotnet test           # Run tests
-cd src/EnterpriseApi.WebApi && dotnet run  # Start API (https://localhost:5001)
+cd src/Enterprise.WebApi && dotnet run  # Start API (https://localhost:5001)
 docker-compose up -d  # Run with Docker (includes SQL Server)
 ```
 
