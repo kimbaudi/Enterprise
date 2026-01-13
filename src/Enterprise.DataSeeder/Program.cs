@@ -18,7 +18,7 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    var rootCommand = new RootCommand("Enterprise API Database Seeder - CLI tool for database operations");
+    var rootCommand = new RootCommand("Enterprise Web API Database Seeder - CLI tool for database operations");
 
     // Seed command
     var seedCommand = new Command("seed", "Seed the database with sample data");

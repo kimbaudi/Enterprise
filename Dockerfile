@@ -1,4 +1,4 @@
-# Enterprise API - .NET Core 8 Web API
+# Enterprise Web API - .NET Core 8 Web API
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app

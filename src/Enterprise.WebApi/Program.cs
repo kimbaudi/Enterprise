@@ -17,7 +17,7 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    Log.Information("Starting Enterprise API");
+    Log.Information("Starting Enterprise Web API");
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -49,7 +49,7 @@ try
     {
         options.SwaggerDoc("v1", new OpenApiInfo
         {
-            Title = "Enterprise API",
+            Title = "Enterprise Web API",
             Version = "v1",
             Description = "An enterprise-ready ASP.NET Core Web API with clean architecture",
             Contact = new OpenApiContact
@@ -196,7 +196,7 @@ try
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Enterprise API v1");
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Enterprise Web API v1");
             c.RoutePrefix = "swagger"; // Set Swagger UI at /swagger
         });
     }

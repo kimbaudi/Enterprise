@@ -2,7 +2,7 @@
 
 ## 🎯 What Changed?
 
-Your Enterprise API has been upgraded with production-grade improvements for **performance**, **security**, and **monitoring**.
+Your Enterprise Web API has been upgraded with production-grade improvements for **performance**, **security**, and **monitoring**.
 
 ## 🚀 Key Improvements at a Glance
 

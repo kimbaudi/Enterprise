@@ -1,4 +1,4 @@
-# Enterprise API - AI Coding Instructions
+# Enterprise Web API - AI Coding Instructions
 
 ## Architecture: Clean Architecture + CQRS Pattern
 

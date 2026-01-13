@@ -2,7 +2,7 @@
 
 ## Overview
 
-Created a comprehensive command-line utility for database seeding and management operations for the Enterprise API.
+Created a comprehensive command-line utility for database seeding and management operations for the Enterprise Web API.
 
 ## What Was Created
 

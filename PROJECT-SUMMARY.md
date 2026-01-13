@@ -1,4 +1,4 @@
-# Enterprise API - Project Summary
+# Enterprise Web API - Project Summary
 
 ## ✅ Project Status: Complete
 

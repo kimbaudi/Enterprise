@@ -1,6 +1,6 @@
 # Enterprise DataSeeder CLI
 
-A command-line utility for managing database seeding and migrations for the Enterprise API.
+A command-line utility for managing database seeding and migrations for the Enterprise Web API.
 
 ## Features
 

@@ -1,4 +1,4 @@
-# Enterprise API - .NET Core 8 Web API
+# Enterprise Web API - .NET Core 8 Web API
 
 An enterprise-ready ASP.NET Core 8 Web API implementing **Clean Architecture** with **CQRS pattern**, featuring **MediatR pipeline behaviors**, comprehensive validation, logging, and best practices.
 
