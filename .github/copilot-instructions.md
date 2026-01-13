@@ -1,124 +1,160 @@
-# Project Setup Instructions
+# Enterprise API - AI Coding Instructions
 
-## Project Type: .NET Core 8 Web API - Enterprise Edition with CQRS and Best Practices
+## Architecture: Clean Architecture + CQRS Pattern
 
-This is an enterprise-ready .NET Core 8 Web API implementing Clean Architecture with CQRS pattern and MediatR pipeline behaviors.
+This is a .NET 8 Web API using **Clean Architecture** with **CQRS** via MediatR. All requests flow through ordered pipeline behaviors before reaching handlers.
 
-## Architecture Overview
+### Dependency Flow (Strict Inward Rule)
 
-The application follows Clean Architecture with CQRS (Command Query Responsibility Segregation):
-
-- **API Layer** → Thin controllers dispatching to MediatR
-- **Application Layer** → Commands (writes) and Queries (reads) with handlers
-  - **Pipeline Behaviors** → Cross-cutting concerns (validation, logging, performance)
-- **Infrastructure Layer** → Repositories, Unit of Work, EF Core
-- **Domain Layer** → Entities, interfaces, business rules
-
-## MediatR Pipeline Behaviors
-
-All commands and queries flow through these pipeline behaviors in order:
-
-1. **LoggingBehavior** - Logs all requests with execution time
-2. **ValidationBehavior** - Automatic FluentValidation before handlers
-3. **PerformanceBehavior** - Monitors and logs slow requests (>500ms)
-
-```
-Request → Logging → Validation → Performance → Handler → Response
+```text
+WebApi → Application + Infrastructure → Domain (no dependencies)
 ```
 
-## Setup Progress
+### Request Pipeline (Order Matters!)
 
-- [x] Created copilot-instructions.md
-- [x] Scaffolded .NET solution and projects
-- [x] Created Domain Layer
-- [x] Created Application Layer with CQRS
-- [x] Created Infrastructure Layer
-- [x] Created Web API Layer
-- [x] Added Configuration Files
-- [x] Implemented MediatR Pipeline Behaviors
-- [x] Added Pagination Support
-- [x] Created Custom Exceptions (NotFoundException, ValidationException)
-- [x] Simplified Controllers (removed manual validation)
-- [x] Created Unit Test Project with Examples
-- [x] Built Project Successfully
-- [x] All Tests Passing ✅
-- [x] Completed Documentation
+```text
+Controller → MediatR → LoggingBehavior → ValidationBehavior → PerformanceBehavior → Handler
+```
 
-## Project Complete! 🎉
+**Critical**: Pipeline behaviors in `Application/DependencyInjection.cs` execute in registration order. Never reorder without understanding impact.
 
-The enterprise-ready .NET Core 8 Web API is now fully set up with best practices including:
+## Adding New Features (CQRS Pattern)
 
-### Architecture
+### 1. Commands (Write Operations)
 
-- Clean Architecture (Domain, Application, Infrastructure, WebApi layers)
-- **CQRS Pattern** using MediatR
-- Commands for write operations (Create, Update, Delete)
-- Queries for read operations (GetAll, GetById, GetByCategory, GetPaginated)
-- Proper dependency flow: API → Application/Infrastructure → Domain
+Create in `Application/Features/{Feature}/Commands/{Action}/`:
 
-### Features
+- `{Action}Command.cs` - Record implementing `IRequest<TResponse>`
+- `{Action}CommandHandler.cs` - Implements `IRequestHandler<TCommand, TResponse>`
+- `{Action}CommandValidator.cs` - FluentValidation rules (optional but recommended)
 
-- Entity Framework Core 8 with Repository and Unit of Work patterns
-- **MediatR** for CQRS implementation with **Pipeline Behaviors**
-  - **ValidationBehavior** - Automatic input validation
-  - **LoggingBehavior** - Request/response logging
-  - **PerformanceBehavior** - Slow request monitoring
-- JWT Authentication
-- Swagger/OpenAPI documentation
-- Serilog logging
-- FluentValidation (integrated with pipeline)
-- AutoMapper
-- Global error handling middleware
-- Custom exceptions (NotFoundException, ValidationException)
-- Health checks
-- CORS support
-- **Pagination support** with PaginatedResult<T>
-- Docker and Docker Compose configuration
-- **Comprehensive unit tests** with xUnit, Moq, and FluentAssertions
+**Example**: See `Application/Features/Products/Commands/CreateProduct/` for reference pattern.
 
-### Best Practices Implemented
+**Key Pattern**:
 
-✅ Thin controllers - no business logic
-✅ Automatic validation via pipeline behaviors
-✅ Structured logging with execution time tracking
-✅ Performance monitoring for slow operations
-✅ Proper exception handling with custom exceptions
-✅ Pagination for list queries
-✅ Comprehensive unit tests with examples
-✅ Mocking and FluentAssertions for testability
+- Use record types for commands/queries (immutable)
+- Inject `IUnitOfWork` (not DbContext directly)
+- Always call `await _unitOfWork.SaveChangesAsync(cancellationToken)` after repository operations
+- Return DTOs, never domain entities
 
-### Test Coverage
+### 2. Queries (Read Operations)
 
-The test project includes examples of:
+Create in `Application/Features/{Feature}/Queries/{Action}/`:
 
-- Command handler tests (CreateProductCommandHandler)
-- Query handler tests (GetProductByIdQueryHandler)
-- Pipeline behavior tests (ValidationBehavior)
-- Proper use of Moq for mocking dependencies
-- FluentAssertions for expressive test assertions
+- `{Action}Query.cs` - Record implementing `IRequest<TResponse>`
+- `{Action}QueryHandler.cs` - Implements `IRequestHandler<TQuery, TResponse>`
 
-### Next Steps
+**Example**: See `Application/Features/Products/Queries/GetProductsPaginated/` for pagination pattern.
 
-1. **Run migrations** to create the database:
+**Key Pattern**:
 
-   ```bash
-   dotnet ef migrations add InitialCreate --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
-   dotnet ef database update --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
-   ```
+- For list queries with many results, return `PaginatedResult<T>` (see `Common/Models/PaginatedResult.cs`)
+- Use `IRepository<T>` methods, never direct DbContext access
+- Apply `[ResponseCache]` attribute in controller for cacheable queries
 
-2. **Run the application**:
+### 3. Controllers (Thin Layer)
 
-   ```bash
-   cd src/EnterpriseApi.WebApi
-   dotnet run
-   ```
+Controllers only: inject `IMediator`, dispatch commands/queries, wrap in `ApiResponse<T>`.
 
-3. **Run tests**:
+**Pattern**:
 
-   ```bash
-   dotnet test
-   ```
+```csharp
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
+public class {Feature}Controller : ControllerBase
+{
+    private readonly IMediator _mediator;
+    
+    [HttpPost]
+    public async Task<ActionResult<ApiResponse<TDto>>> Create([FromBody] CreateDto dto, CancellationToken ct)
+    {
+        var command = new Create{Feature}Command(dto.Property1, dto.Property2);
+        var result = await _mediator.Send(command, ct);
+        return Ok(new ApiResponse<TDto>(result));
+    }
+}
+```
 
-4. **Access Swagger UI** at `https://localhost:5001` to test the API
+**Never**: Put validation, business logic, or database access in controllers. Use MediatR pipeline behaviors.
 
-See the [README.md](../../README.md) for complete documentation.
+## Validation Strategy
+
+**Do not** validate in controllers. FluentValidation runs automatically via `ValidationBehavior` pipeline.
+
+1. Create `{Action}CommandValidator : AbstractValidator<{Action}Command>` in same folder as command
+2. ValidationBehavior auto-discovers and executes validators
+3. Throws `Application.Common.Exceptions.ValidationException` on failure
+4. Global exception middleware converts to 400 response
+
+## Testing Pattern
+
+**Location**: `tests/EnterpriseApi.Application.Tests/Features/{Feature}/{Commands|Queries}/`
+
+**Setup**:
+
+```csharp
+private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+private readonly Mock<IRepository<Entity>> _repositoryMock;
+private readonly Mock<IMapper> _mapperMock;
+```
+
+**Assertions**: Use FluentAssertions (`.Should().Be()`, `.Should().NotBeNull()`) not xUnit asserts.
+
+**Example**: See `CreateProductCommandHandlerTests.cs` for complete handler testing pattern.
+
+## Database Operations
+
+**Migration Commands** (from solution root):
+
+```bash
+# Create migration
+dotnet ef migrations add {MigrationName} --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
+
+# Apply migration
+dotnet ef database update --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
+
+# Seed data (10k products, 1k users)
+cd src/EnterpriseApi.DataSeeder && dotnet run
+```
+
+**Repository Pattern**: Use `IRepository<T>` and `IUnitOfWork`, never inject `ApplicationDbContext` into handlers.
+
+## Key Conventions
+
+- **API Versioning**: All routes use `/api/v{version:apiVersion}/` pattern (currently v1)
+- **DTOs**: Map entities to DTOs using AutoMapper (config in `Application/Mappings/MappingProfile.cs`)
+- **Exceptions**: Use custom exceptions (`NotFoundException`, `ValidationException`) from `Application/Common/Exceptions/`
+- **Logging**: Serilog auto-logs all requests via LoggingBehavior; avoid manual logging in handlers
+- **Performance**: PerformanceBehavior logs warnings for requests >500ms
+- **Secrets**: JWT secrets via user-secrets (dev) or environment variables (prod), never in appsettings.json
+
+## Authentication
+
+Default seeded users (password: {Role}@123):
+
+- `admin` / Admin@123 - Full access
+- `manager` / Manager@123 - Manager role
+- `user` / User@123 - Basic user
+
+Login via `POST /api/v1/auth/login` to get JWT token. Use in Swagger or as `Authorization: Bearer {token}` header.
+
+## Common Tasks
+
+**Run & Test**:
+
+```bash
+dotnet build          # Build solution
+dotnet test           # Run tests
+cd src/EnterpriseApi.WebApi && dotnet run  # Start API (https://localhost:5001)
+docker-compose up -d  # Run with Docker (includes SQL Server)
+```
+
+**Debugging**: Swagger UI at `https://localhost:5001` - use JWT auth button to test secured endpoints.
+
+## Critical Files
+
+- `Application/DependencyInjection.cs` - MediatR + pipeline behavior registration order
+- `Infrastructure/DependencyInjection.cs` - Repository + DbContext registration
+- `WebApi/Program.cs` - Middleware pipeline, JWT config, Serilog setup
+- `Application/Common/Behaviors/` - Pipeline behaviors (logging, validation, performance)
+- `docs/CQRS-ARCHITECTURE.md` - Detailed CQRS implementation guide
