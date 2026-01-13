@@ -16,7 +16,7 @@ public static class DatabaseSeeder
     private static readonly string[] _firstNames = { "John", "Jane", "Michael", "Sarah", "David", "Emily", "Robert", "Jennifer", "William", "Lisa", "James", "Mary", "Christopher", "Patricia", "Daniel", "Linda" };
     private static readonly string[] _lastNames = { "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Wilson", "Anderson", "Thomas", "Taylor" };
 
-    public static async Task SeedDatabaseAsync(IServiceProvider serviceProvider, int productCount = 10000, int userCount = 1000)
+    public static async Task SeedDatabaseAsync(IServiceProvider serviceProvider, int productCount = 100, int userCount = 10)
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
