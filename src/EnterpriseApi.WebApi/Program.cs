@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using EnterpriseApi.Application;
 using EnterpriseApi.Infrastructure;
 using EnterpriseApi.Infrastructure.Data;
@@ -25,6 +26,22 @@ try
 
     // Add services to the container
     builder.Services.AddControllers();
+    
+    // Add Response Caching
+    builder.Services.AddResponseCaching();
+    
+    // Add API Versioning
+    builder.Services.AddApiVersioning(options =>
+    {
+        options.DefaultApiVersion = new ApiVersion(1, 0);
+        options.AssumeDefaultVersionWhenUnspecified = true;
+        options.ReportApiVersions = true;
+        options.ApiVersionReader = ApiVersionReader.Combine(
+            new UrlSegmentApiVersionReader(),
+            new HeaderApiVersionReader("X-Api-Version"),
+            new MediaTypeApiVersionReader("ver"));
+    }).AddMvc();
+    
     builder.Services.AddEndpointsApiExplorer();
 
     // Configure Swagger/OpenAPI
@@ -105,10 +122,35 @@ try
                   .AllowAnyMethod()
                   .AllowAnyHeader();
         });
+        
+        // Production-ready CORS policy (configure allowed origins as needed)
+        options.AddPolicy("Production", policy =>
+        {
+            policy.WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>() ?? new[] { "https://yourdomain.com" })
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials()
+                  .SetIsOriginAllowedToAllowWildcardSubdomains();
+        });
     });
+    
+    // Add HSTS
+    if (!builder.Environment.IsDevelopment())
+    {
+        builder.Services.AddHsts(options =>
+        {
+            options.Preload = true;
+            options.IncludeSubDomains = true;
+            options.MaxAge = TimeSpan.FromDays(365);
+        });
+    }
 
     // Add Health Checks
-    builder.Services.AddHealthChecks();
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    builder.Services.AddHealthChecks()
+        .AddSqlServer(connectionString ?? throw new InvalidOperationException("Connection string not found"), 
+            name: "database", 
+            tags: new[] { "db", "sql", "ready" });
 
     // Add Application and Infrastructure layers
     builder.Services.AddApplication();
@@ -134,8 +176,25 @@ try
             c.RoutePrefix = "swagger"; // Set Swagger UI at /swagger
         });
     }
+    else
+    {
+        app.UseHsts();
+    }
 
     app.UseHttpsRedirection();
+    
+    // Add Response Caching Middleware
+    app.UseResponseCaching();
+    
+    // Add security headers
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        context.Response.Headers["X-Frame-Options"] = "DENY";
+        context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+        context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+        await next();
+    });
 
     app.UseCors("AllowAll");
 
@@ -143,7 +202,30 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
+    
+    // Health check endpoints
     app.MapHealthChecks("/health");
+    app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("ready"),
+        ResponseWriter = async (context, report) =>
+        {
+            context.Response.ContentType = "application/json";
+            var result = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                status = report.Status.ToString(),
+                checks = report.Entries.Select(e => new
+                {
+                    name = e.Key,
+                    status = e.Value.Status.ToString(),
+                    description = e.Value.Description,
+                    duration = e.Value.Duration.ToString()
+                })
+            });
+            await context.Response.WriteAsync(result);
+        }
+    });
+    app.MapHealthChecks("/health/live");
 
     app.Run();
 }

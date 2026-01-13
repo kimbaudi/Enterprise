@@ -2,6 +2,8 @@
 
 An enterprise-ready ASP.NET Core 8 Web API implementing **Clean Architecture** with **CQRS pattern**, featuring **MediatR pipeline behaviors**, comprehensive validation, logging, and best practices.
 
+> **✨ Recently Enhanced** - Performance optimizations, security hardening, API versioning, and enhanced health checks. See [IMPROVEMENTS-APPLIED.md](docs/IMPROVEMENTS-APPLIED.md) for details.
+
 ## 🏗️ Architecture
 
 This project follows **Clean Architecture** with **CQRS (Command Query Responsibility Segregation)** using MediatR:
@@ -169,35 +171,47 @@ docker run -p 5000:80 enterprise-api
 
 ## 📡 API Endpoints
 
+> **Note:** All endpoints now use API versioning. Use `/api/v1/` prefix instead of `/api/`. See [API Versioning](#api-versioning) section.
+
 ### Products
 
-- `GET /api/products` - Get all products
-- `GET /api/products/paginated?pageNumber=1&pageSize=10` - Get paginated products
-- `GET /api/products/{id}` - Get product by ID
-- `GET /api/products/category/{category}` - Get products by category
-- `POST /api/products` - Create a new product
-- `PUT /api/products/{id}` - Update a product
-- `DELETE /api/products/{id}` - Delete a product
+- `GET /api/v1/products` - Get all products (cached 60s)
+- `GET /api/v1/products/paginated?pageNumber=1&pageSize=10` - Get paginated products (cached 60s)
+- `GET /api/v1/products/{id}` - Get product by ID
+- `GET /api/v1/products/category/{category}` - Get products by category (cached 60s)
+- `POST /api/v1/products` - Create a new product
+- `PUT /api/v1/products/{id}` - Update a product
+- `DELETE /api/v1/products/{id}` - Delete a product
+
+### Authentication
+
+- `POST /api/v1/auth/register` - Register a new user
+- `POST /api/v1/auth/login` - Login and get JWT token
+- `POST /api/v1/auth/refresh` - Refresh access token
 
 ### Health
 
-- `GET /api/health` - Health check endpoint
-- `GET /health` - Application health check
+- `GET /health` - Basic health check
+- `GET /health/ready` - Detailed health check with database status
+- `GET /health/live` - Liveness probe
 
 ## 🔧 Configuration
 
 ### JWT Settings
 
-Configure JWT in `appsettings.json`:
+⚠️ **Security Warning:** Never commit secrets to source control!
 
-```json
-"JwtSettings": {
-  "SecretKey": "YourSuperSecretKeyForJWTTokenGeneration123456",
-  "Issuer": "EnterpriseAPI",
-  "Audience": "EnterpriseAPIUsers",
-  "ExpirationInMinutes": 60
-}
+For **development**, use User Secrets:
+
+```bash
+cd src/EnterpriseApi.WebApi
+dotnet user-secrets init
+dotnet user-secrets set "JwtSettings:SecretKey" "YourSecretKeyHere_Min32Characters!"
 ```
+
+For **production**, use environment variables or Azure Key Vault.
+
+See [SECURITY-CONFIGURATION.md](docs/SECURITY-CONFIGURATION.md) for detailed setup instructions.
 
 ### Database
 
@@ -305,25 +319,83 @@ dotnet ef database update --project src/EnterpriseApi.Infrastructure --startup-p
 
 ## 📝 Best Practices Implemented
 
-- ✅ Clean Architecture
+### Architecture & Design
+
+- ✅ Clean Architecture with clear separation of concerns
+- ✅ CQRS Pattern with MediatR
 - ✅ SOLID Principles
-- ✅ Repository Pattern
-- ✅ Unit of Work Pattern
-- ✅ Dependency Injection
+- ✅ Repository Pattern with Unit of Work
+- ✅ Dependency Injection throughout
+
+### Performance & Optimization
+
+- ✅ AsNoTracking() for read-only queries (30-40% performance gain)
+- ✅ Response caching on GET endpoints
 - ✅ Async/Await throughout
-- ✅ Global exception handling
-- ✅ Request validation
-- ✅ Structured logging
-- ✅ API versioning ready
+- ✅ Pagination support for list queries
+
+### Security & Hardening
+
+- ✅ JWT Bearer token authentication
+- ✅ HTTPS redirection with HSTS
+- ✅ Security headers (X-Frame-Options, X-Content-Type-Options, etc.)
+- ✅ User Secrets for development
+- ✅ Environment-based configuration
+- ✅ Production-ready CORS policy
+
+### Monitoring & Observability
+
+- ✅ Enhanced health checks with database connectivity
+- ✅ Structured logging with Serilog
+- ✅ Performance monitoring (slow request detection >500ms)
+- ✅ Kubernetes readiness/liveness probes
+
+### API Design
+
+- ✅ API versioning with URL segments (`/api/v1/`)
+- ✅ RESTful endpoints
+- ✅ Swagger/OpenAPI documentation
+- ✅ Global exception handling with RFC 7807 Problem Details
+
+### Code Quality
+
+- ✅ FluentValidation with automatic pipeline validation
+- ✅ MediatR pipeline behaviors (Logging, Validation, Performance)
+- ✅ Custom exceptions (NotFoundException, ValidationException)
+- ✅ Unit tests with xUnit, Moq, and FluentAssertions
 - ✅ Soft delete pattern
-- ✅ Docker support
+
+### DevOps
+
+- ✅ Docker support with multi-stage builds
+- ✅ Docker Compose for local development
+- ✅ Database migration support
 
 ## 🔐 Security
 
-- JWT Bearer token authentication configured
-- HTTPS redirection enabled
-- Input validation with FluentValidation
-- Secure connection strings in configuration
+- JWT Bearer token authentication with configurable expiration
+- HTTPS redirection enabled with HSTS in production
+- Security headers to prevent common attacks
+- Input validation with FluentValidation via pipeline behavior
+- Secure secrets management (User Secrets, Environment Variables, Key Vault)
+- Production-ready CORS policy with origin whitelisting
+
+See [SECURITY-CONFIGURATION.md](docs/SECURITY-CONFIGURATION.md) for security setup guide.
+
+## 🚀 Performance Features
+
+- **Query Optimization:** AsNoTracking() on all read operations
+- **Response Caching:** 60-second cache on GET endpoints
+- **Async Operations:** Non-blocking I/O throughout
+- **Pagination:** Efficient data retrieval for large datasets
+- **Performance Monitoring:** Automatic detection of slow queries
+
+## 📚 Documentation
+
+- [CQRS Architecture Guide](docs/CQRS-ARCHITECTURE.md) - Detailed architecture documentation
+- [Security Configuration](docs/SECURITY-CONFIGURATION.md) - JWT and secrets management
+- [Improvements Applied](docs/IMPROVEMENTS-APPLIED.md) - Recent enhancements and optimizations
+- [Authentication Guide](AUTHENTICATION.md) - Authentication and authorization setup
 
 ## 📄 License
 

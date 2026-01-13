@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using EnterpriseApi.Application.Features.Auth.Commands.Login;
 using EnterpriseApi.Application.Features.Auth.Commands.RefreshToken;
 using EnterpriseApi.Application.Features.Auth.Commands.Register;
@@ -8,7 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace EnterpriseApi.WebApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;

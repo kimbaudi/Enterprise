@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using EnterpriseApi.Application.Common.Models;
 using EnterpriseApi.Application.DTOs;
 using EnterpriseApi.Application.Features.Products.Commands.CreateProduct;
@@ -14,7 +15,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace EnterpriseApi.WebApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class ProductsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -32,6 +34,7 @@ public class ProductsController : ControllerBase
     /// Get all products
     /// </summary>
     [HttpGet]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "*" })]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<ProductDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<IEnumerable<ProductDto>>>> GetAllProducts(CancellationToken cancellationToken)
     {
@@ -63,6 +66,7 @@ public class ProductsController : ControllerBase
     /// Get products by category
     /// </summary>
     [HttpGet("category/{category}")]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "category" })]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<ProductDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<IEnumerable<ProductDto>>>> GetProductsByCategory(string category, CancellationToken cancellationToken)
     {
@@ -75,6 +79,7 @@ public class ProductsController : ControllerBase
     /// Get products with pagination
     /// </summary>
     [HttpGet("paginated")]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "pageNumber", "pageSize" })]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<PaginatedResult<ProductDto>>>> GetProductsPaginated(
         [FromQuery] int pageNumber = 1,
