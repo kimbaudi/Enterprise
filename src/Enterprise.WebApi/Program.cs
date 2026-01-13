@@ -184,6 +184,13 @@ try
     // Configure the HTTP request pipeline
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHsts();
+    }
+
+    app.UseHttpsRedirection();
+
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
@@ -193,12 +200,6 @@ try
             c.RoutePrefix = "swagger"; // Set Swagger UI at /swagger
         });
     }
-    else
-    {
-        app.UseHsts();
-    }
-
-    app.UseHttpsRedirection();
 
     // Add Response Caching Middleware
     app.UseResponseCaching();
