@@ -125,20 +125,34 @@ Request → Logging → Validation → Performance → Handler → Response
    dotnet ef database update --project src/EnterpriseApi.Infrastructure --startup-project src/EnterpriseApi.WebApi
    ```
 
-5. **Build the solution**
+5. **Seed the database (optional but recommended)**
+
+   ```bash
+   cd src/Enterprise.DataSeeder
+   dotnet run -- seed
+   ```
+
+   This creates default users and sample data. See [DataSeeder CLI documentation](docs/DATASEEDER-CLI.md) for more options.
+
+   **Default test users:**
+   - `admin` / `Admin@123` (Admin role)
+   - `manager` / `Manager@123` (Manager role)
+   - `user` / `User@123` (User role)
+
+6. **Build the solution**
 
    ```bash
    dotnet build
    ```
 
-6. **Run the application**
+7. **Run the application**
 
    ```bash
    cd src/EnterpriseApi.WebApi
    dotnet run
    ```
 
-7. **Access the API**
+8. **Access the API**
    - Swagger UI: `https://localhost:5001` or `http://localhost:5000`
    - Health Check: `https://localhost:5001/health`
 

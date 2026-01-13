@@ -1,6 +1,6 @@
 using FluentValidation;
 using MediatR;
-using ValidationException = EnterpriseApi.Application.Common.Exceptions.ValidationException;
+using ValidationException = Enterprise.Application.Common.Exceptions.ValidationException;
 
 namespace Enterprise.Application.Common.Behaviors;
 
