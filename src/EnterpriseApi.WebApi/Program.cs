@@ -116,7 +116,7 @@ try
     var app = builder.Build();
 
     // Configure the HTTP request pipeline
-    app.UseMiddleware<ErrorHandlingMiddleware>();
+    app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
     if (app.Environment.IsDevelopment())
     {

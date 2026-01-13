@@ -148,7 +148,7 @@ Enterprise/
 │   │
 │   └── EnterpriseApi.WebApi/
 │       ├── Controllers/ProductsController.cs
-│       ├── Middleware/ErrorHandlingMiddleware.cs
+│       ├── Middleware/GlobalExceptionHandlerMiddleware.cs
 │       ├── Program.cs
 │       └── appsettings.json
 │
