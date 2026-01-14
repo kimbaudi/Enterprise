@@ -1,10 +1,10 @@
 using Asp.Versioning;
 using Enterprise.Application.Common.Models;
+using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Products.Commands.CreateProduct;
 using Enterprise.Application.Features.Products.Commands.DeleteProduct;
 using Enterprise.Application.Features.Products.Commands.UpdateProduct;
 using Enterprise.Application.Features.Products.Commands.UploadProductImage;
-using Enterprise.Application.Features.Products.Queries;
 using Enterprise.Application.Features.Products.Queries.GetProductById;
 using Enterprise.Application.Features.Products.Queries.GetProductsByCategory;
 using Enterprise.Application.Features.Products.Queries.GetProductsPaginated;

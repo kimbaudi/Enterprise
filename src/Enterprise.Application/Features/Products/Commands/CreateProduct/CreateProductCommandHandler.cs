@@ -1,5 +1,5 @@
 using AutoMapper;
-using Enterprise.Application.Features.Products.Queries;
+using Enterprise.Application.DTOs;
 using Enterprise.Domain.Entities;
 using Enterprise.Application.Common.Interfaces;
 using MediatR;

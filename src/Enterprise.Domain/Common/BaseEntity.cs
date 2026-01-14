@@ -1,3 +1,5 @@
+using Enterprise.Domain.Interfaces;
+
 namespace Enterprise.Domain.Common;
 
 public abstract class BaseEntity : IAuditableEntity

@@ -1,5 +1,4 @@
 using Enterprise.Application.Common.Interfaces;
-using Enterprise.Domain.Interfaces;
 using Enterprise.Infrastructure.Persistence;
 using Enterprise.Infrastructure.Repositories;
 using Enterprise.Infrastructure.Services;

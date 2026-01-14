@@ -1,4 +1,4 @@
-namespace Enterprise.Application.Features.Products.Queries;
+namespace Enterprise.Application.DTOs;
 
 public class ProductDto
 {

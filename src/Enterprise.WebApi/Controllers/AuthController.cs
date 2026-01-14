@@ -1,5 +1,4 @@
 using Asp.Versioning;
-using Enterprise.Application.Common.Models;
 using Enterprise.Application.Features.Auth.Commands.ForgotPassword;
 using Enterprise.Application.Features.Auth.Commands.Login;
 using Enterprise.Application.Features.Auth.Commands.RefreshToken;

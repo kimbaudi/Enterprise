@@ -1,4 +1,4 @@
-using Enterprise.Application.Features.Users.Queries;
+using Enterprise.Application.DTOs;
 using MediatR;
 
 namespace Enterprise.Application.Features.Users.Commands.CreateUser;

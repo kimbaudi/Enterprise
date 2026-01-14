@@ -1,5 +1,5 @@
-using Enterprise.Domain.Entities;
 using Enterprise.Application.Common.Interfaces;
+using Enterprise.Domain.Entities;
 using Enterprise.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 

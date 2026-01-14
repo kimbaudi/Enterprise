@@ -1,7 +1,7 @@
 using AutoMapper;
+using Enterprise.Application.Common.Interfaces;
 using Enterprise.Application.Common.Models;
 using Enterprise.Application.DTOs;
-using Enterprise.Domain.Interfaces;
 using MediatR;
 
 namespace Enterprise.Application.Features.AuditLogs.Queries.GetAuditLogsByEntity;

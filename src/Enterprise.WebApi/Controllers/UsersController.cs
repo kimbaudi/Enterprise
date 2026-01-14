@@ -1,8 +1,7 @@
 using Asp.Versioning;
-using Enterprise.Application.Common.Models;
+using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Users.Commands.CreateUser;
 using Enterprise.Application.Features.Users.Commands.UpdateUser;
-using Enterprise.Application.Features.Users.Queries;
 using Enterprise.WebApi.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;

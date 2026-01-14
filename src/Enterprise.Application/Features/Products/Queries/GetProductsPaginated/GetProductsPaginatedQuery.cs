@@ -1,5 +1,5 @@
 using Enterprise.Application.Common.Models;
-using Enterprise.Application.Features.Products.Queries;
+using Enterprise.Application.DTOs;
 using MediatR;
 
 namespace Enterprise.Application.Features.Products.Queries.GetProductsPaginated;

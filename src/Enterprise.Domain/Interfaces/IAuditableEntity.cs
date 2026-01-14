@@ -1,4 +1,4 @@
-namespace Enterprise.Domain.Common;
+namespace Enterprise.Domain.Interfaces;
 
 public interface IAuditableEntity
 {

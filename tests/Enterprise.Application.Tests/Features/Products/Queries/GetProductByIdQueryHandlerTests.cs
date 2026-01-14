@@ -1,4 +1,3 @@
-using Enterprise.Application.Features.Products.Queries;
 using AutoMapper;
 using Enterprise.Application.Common.Exceptions;
 using Enterprise.Application.DTOs;

@@ -2,10 +2,8 @@ using AutoMapper;
 using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Products.Commands.CreateProduct;
 using Enterprise.Application.Features.Products.Commands.UpdateProduct;
-using Enterprise.Application.Features.Products.Queries;
 using Enterprise.Application.Features.Users.Commands.CreateUser;
 using Enterprise.Application.Features.Users.Commands.UpdateUser;
-using Enterprise.Application.Features.Users.Queries;
 using Enterprise.Domain.Entities;
 
 namespace Enterprise.Application.Mappings;

@@ -1,4 +1,3 @@
-using Enterprise.Application.Features.Products.Queries;
 using AutoMapper;
 using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Products.Commands.CreateProduct;
@@ -21,7 +20,7 @@ public class CreateProductCommandHandlerTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _productRepositoryMock = new Mock<IRepository<Product>>();
         _mapperMock = new Mock<IMapper>();
-        
+
         _handler = new CreateProductCommandHandler(
             _productRepositoryMock.Object,
             _unitOfWorkMock.Object,
@@ -76,10 +75,10 @@ public class CreateProductCommandHandlerTests
         result.Stock.Should().Be(command.Stock);
         result.Category.Should().Be(command.Category);
         result.SKU.Should().Be(command.SKU);
-        
+
         capturedProduct.Should().NotBeNull();
         capturedProduct!.Name.Should().Be(command.Name);
-        
+
         _productRepositoryMock.Verify(r => r.AddAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()), Times.Once);
         _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }

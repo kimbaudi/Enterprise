@@ -1,10 +1,7 @@
-using Enterprise.Application.Features.Products.Queries;
 using Enterprise.Application.Common.Behaviors;
 using FluentAssertions;
 using FluentValidation;
-using FluentValidation.Results;
 using MediatR;
-using Moq;
 using ValidationException = Enterprise.Application.Common.Exceptions.ValidationException;
 
 namespace Enterprise.Application.Tests.Common.Behaviors;

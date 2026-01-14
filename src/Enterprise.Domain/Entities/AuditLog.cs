@@ -1,8 +1,9 @@
+using Enterprise.Domain.Common;
+
 namespace Enterprise.Domain.Entities;
 
-public class AuditLog
+public class AuditLog : BaseEntity
 {
-    public Guid Id { get; set; }
     public string? UserId { get; set; }
     public string? Username { get; set; }
     public string Action { get; set; } = string.Empty;

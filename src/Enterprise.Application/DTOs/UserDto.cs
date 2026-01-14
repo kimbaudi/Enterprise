@@ -1,4 +1,4 @@
-namespace Enterprise.Application.Features.Users.Queries;
+namespace Enterprise.Application.DTOs;
 
 public class UserDto
 {

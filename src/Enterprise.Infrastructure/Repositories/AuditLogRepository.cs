@@ -1,23 +1,14 @@
+using Enterprise.Application.Common.Interfaces;
 using Enterprise.Domain.Entities;
-using Enterprise.Domain.Interfaces;
 using Enterprise.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Enterprise.Infrastructure.Repositories;
 
-public class AuditLogRepository : IAuditLogRepository
+public class AuditLogRepository : Repository<AuditLog>, IAuditLogRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public AuditLogRepository(ApplicationDbContext context)
+    public AuditLogRepository(ApplicationDbContext context) : base(context)
     {
-        _context = context;
-    }
-
-    public async Task<AuditLog> AddAsync(AuditLog auditLog, CancellationToken cancellationToken = default)
-    {
-        await _context.AuditLogs.AddAsync(auditLog, cancellationToken);
-        return auditLog;
     }
 
     public async Task<IEnumerable<AuditLog>> GetAllAsync(
@@ -25,7 +16,7 @@ public class AuditLogRepository : IAuditLogRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        return await _context.AuditLogs
+        return await _dbSet
             .AsNoTracking()
             .OrderByDescending(a => a.Timestamp)
             .Skip((pageNumber - 1) * pageSize)
@@ -40,7 +31,7 @@ public class AuditLogRepository : IAuditLogRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = _context.AuditLogs
+        var query = _dbSet
             .AsNoTracking()
             .Where(a => a.EntityName == entityName);
 
@@ -62,7 +53,7 @@ public class AuditLogRepository : IAuditLogRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        return await _context.AuditLogs
+        return await _dbSet
             .AsNoTracking()
             .Where(a => a.UserId == userId)
             .OrderByDescending(a => a.Timestamp)
@@ -77,7 +68,7 @@ public class AuditLogRepository : IAuditLogRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        return await _context.AuditLogs
+        return await _dbSet
             .AsNoTracking()
             .Where(a => a.Action == action)
             .OrderByDescending(a => a.Timestamp)
@@ -93,7 +84,7 @@ public class AuditLogRepository : IAuditLogRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        return await _context.AuditLogs
+        return await _dbSet
             .AsNoTracking()
             .Where(a => a.Timestamp >= startDate && a.Timestamp <= endDate)
             .OrderByDescending(a => a.Timestamp)
@@ -104,7 +95,7 @@ public class AuditLogRepository : IAuditLogRepository
 
     public async Task<int> GetCountAsync(CancellationToken cancellationToken = default)
     {
-        return await _context.AuditLogs.CountAsync(cancellationToken);
+        return await _dbSet.CountAsync(cancellationToken);
     }
 
     public async Task<int> GetCountByEntityAsync(
@@ -112,7 +103,7 @@ public class AuditLogRepository : IAuditLogRepository
         string? entityId,
         CancellationToken cancellationToken = default)
     {
-        var query = _context.AuditLogs
+        var query = _dbSet
             .Where(a => a.EntityName == entityName);
 
         if (!string.IsNullOrEmpty(entityId))
@@ -127,7 +118,7 @@ public class AuditLogRepository : IAuditLogRepository
         string userId,
         CancellationToken cancellationToken = default)
     {
-        return await _context.AuditLogs
+        return await _dbSet
             .Where(a => a.UserId == userId)
             .CountAsync(cancellationToken);
     }
