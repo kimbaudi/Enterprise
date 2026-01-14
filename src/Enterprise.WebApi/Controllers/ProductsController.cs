@@ -8,7 +8,9 @@ using Enterprise.Application.Features.Products.Commands.UploadProductImage;
 using Enterprise.Application.Features.Products.Queries.GetAllProducts;
 using Enterprise.Application.Features.Products.Queries.GetProductById;
 using Enterprise.Application.Features.Products.Queries.GetProductsByCategory;
+using Enterprise.Application.Features.Products.Queries.GetProductsCached;
 using Enterprise.Application.Features.Products.Queries.GetProductsPaginated;
+using Enterprise.Application.Features.Products.Queries.SearchProducts;
 using Enterprise.WebApi.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -44,6 +46,19 @@ public class ProductsController : ControllerBase
         _logger.LogInformation("Getting all products");
         var products = await _mediator.Send(new GetAllProductsQuery(), cancellationToken);
         return Ok(new ApiResponse<IEnumerable<ProductDto>>(products, "Products retrieved successfully"));
+    }
+
+    /// <summary>
+    /// Get all products (cached with Redis)
+    /// </summary>
+    [HttpGet("cached")]
+    [ResponseCache(NoStore = true)]
+    [ProducesResponseType(typeof(ApiResponse<IEnumerable<ProductDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<IEnumerable<ProductDto>>>> GetProductsCached(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Getting all products from cache");
+        var products = await _mediator.Send(new GetProductsCachedQuery(), cancellationToken);
+        return Ok(new ApiResponse<IEnumerable<ProductDto>>(products, "Products retrieved from cache successfully"));
     }
 
     /// <summary>
@@ -92,6 +107,29 @@ public class ProductsController : ControllerBase
         _logger.LogInformation("Getting products page {PageNumber} with size {PageSize}", pageNumber, pageSize);
         var paginatedProducts = await _mediator.Send(new GetProductsPaginatedQuery(pageNumber, pageSize), cancellationToken);
         return Ok(new ApiResponse<PaginatedResult<ProductDto>>(paginatedProducts, "Products retrieved successfully"));
+    }
+
+    /// <summary>
+    /// Search products with filters
+    /// </summary>
+    [HttpGet("search")]
+    [ResponseCache(Duration = 30, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "searchTerm", "category", "minPrice", "maxPrice", "minStockLevel", "maxStockLevel", "pageNumber", "pageSize" })]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<PaginatedResult<ProductDto>>>> SearchProducts(
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? category = null,
+        [FromQuery] decimal? minPrice = null,
+        [FromQuery] decimal? maxPrice = null,
+        [FromQuery] int? minStockLevel = null,
+        [FromQuery] int? maxStockLevel = null,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Searching products with term: {SearchTerm}", searchTerm);
+        var query = new SearchProductsQuery(searchTerm, category, minPrice, maxPrice, minStockLevel, maxStockLevel, pageNumber, pageSize);
+        var searchResults = await _mediator.Send(query, cancellationToken);
+        return Ok(new ApiResponse<PaginatedResult<ProductDto>>(searchResults, "Search completed successfully"));
     }
 
     /// <summary>

@@ -60,4 +60,9 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
             ? await _dbSet.AsNoTracking().CountAsync(cancellationToken)
             : await _dbSet.AsNoTracking().CountAsync(predicate, cancellationToken);
     }
+
+    public IQueryable<T> GetQueryable()
+    {
+        return _dbSet.AsNoTracking();
+    }
 }

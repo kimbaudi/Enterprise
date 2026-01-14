@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Serilog;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -123,6 +125,19 @@ try
 
     builder.Services.AddAuthorization();
 
+    // Add OpenTelemetry
+    builder.Services.AddOpenTelemetry()
+        .ConfigureResource(resource => resource
+            .AddService(serviceName: "Enterprise.WebApi", serviceVersion: "1.0.0"))
+        .WithTracing(tracing => tracing
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddSqlClientInstrumentation(options =>
+            {
+                options.RecordException = true;
+            })
+            .AddConsoleExporter());
+
     // Add CORS
     builder.Services.AddCors(options =>
     {
@@ -214,6 +229,13 @@ try
     // Add CurrentUserService
     builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+    // Add Redis Distributed Cache
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = builder.Configuration["Redis:Configuration"];
+        options.InstanceName = builder.Configuration["Redis:InstanceName"];
+    });
+
     // Add Hangfire services
     builder.Services.AddHangfire(configuration => configuration
         .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
@@ -266,11 +288,17 @@ try
     // Add Response Caching Middleware
     app.UseResponseCaching();
 
+    // Ensure uploads directory exists
+    var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+    if (!Directory.Exists(uploadsPath))
+    {
+        Directory.CreateDirectory(uploadsPath);
+    }
+
     // Serve static files from uploads directory
     app.UseStaticFiles(new StaticFileOptions
     {
-        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-            Path.Combine(Directory.GetCurrentDirectory(), "uploads")),
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
         RequestPath = "/uploads"
     });
 

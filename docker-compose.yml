@@ -10,8 +10,10 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:80
       - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=EnterpriseDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+      - Redis__Configuration=redis:6379
     depends_on:
       - sqlserver
+      - redis
     networks:
       - enterprise-network
 
@@ -27,9 +29,20 @@ services:
     networks:
       - enterprise-network
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - enterprise-network
+    command: redis-server --appendonly yes
+
 networks:
   enterprise-network:
     driver: bridge
 
 volumes:
   sqlserver-data:
+  redis-data:
