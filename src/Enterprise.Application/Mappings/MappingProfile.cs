@@ -2,6 +2,7 @@ using AutoMapper;
 using Enterprise.Application.Features.Products.Commands.CreateProduct;
 using Enterprise.Application.Features.Products.Commands.UpdateProduct;
 using Enterprise.Application.Features.Products.Queries;
+using Enterprise.Application.Features.Users.Queries;
 using Enterprise.Domain.Entities;
 
 namespace Enterprise.Application.Mappings;
@@ -23,5 +24,8 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
             .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
             .ForMember(dest => dest.SKU, opt => opt.Ignore());
+
+        // User mappings
+        CreateMap<User, UserDto>();
     }
 }
