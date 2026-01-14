@@ -25,11 +25,11 @@ try
     var productsOption = new Option<int>(
         name: "--products",
         description: "Number of products to seed",
-        getDefaultValue: () => 10000);
+        getDefaultValue: () => 100);
     var usersOption = new Option<int>(
         name: "--users",
         description: "Number of users to seed",
-        getDefaultValue: () => 1000);
+        getDefaultValue: () => 10);
     var forceOption = new Option<bool>(
         name: "--force",
         description: "Force seeding even if data already exists",
@@ -39,10 +39,7 @@ try
     seedCommand.AddOption(usersOption);
     seedCommand.AddOption(forceOption);
 
-    seedCommand.SetHandler(async (int products, int users, bool force) =>
-    {
-        await SeedDatabaseAsync(products, users, force);
-    }, productsOption, usersOption, forceOption);
+    seedCommand.SetHandler(SeedDatabaseAsync, productsOption, usersOption, forceOption);
 
     // Clear command
     var clearCommand = new Command("clear", "Clear all data from the database");
@@ -69,11 +66,11 @@ try
     var resetProductsOption = new Option<int>(
         name: "--products",
         description: "Number of products to seed",
-        getDefaultValue: () => 10000);
+        getDefaultValue: () => 100);
     var resetUsersOption = new Option<int>(
         name: "--users",
         description: "Number of users to seed",
-        getDefaultValue: () => 1000);
+        getDefaultValue: () => 10);
 
     resetCommand.AddOption(resetProductsOption);
     resetCommand.AddOption(resetUsersOption);

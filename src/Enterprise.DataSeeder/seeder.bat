@@ -18,7 +18,7 @@ if "%1"=="" (
     echo   seeder.bat seed --products 50000 --users 5000
     echo   seeder.bat clear --confirm
     echo   seeder.bat migrate
-    echo   seeder.bat reset --products 10000
+    echo   seeder.bat reset --products 100
     echo.
     echo For more help: seeder.bat help
     exit /b 0

@@ -30,7 +30,7 @@ if ([string]::IsNullOrEmpty($Command)) {
     Write-Host "  ./seeder.ps1 seed --products 50000 --users 5000"
     Write-Host "  ./seeder.ps1 clear --confirm"
     Write-Host "  ./seeder.ps1 migrate"
-    Write-Host "  ./seeder.ps1 reset --products 10000"
+    Write-Host "  ./seeder.ps1 reset --products 100"
     Write-Host ""
     Write-Host "For more help: ./seeder.ps1 help" -ForegroundColor Yellow
     exit 0

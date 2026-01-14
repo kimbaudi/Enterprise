@@ -49,7 +49,7 @@ Perfect for local development and testing.
 ### Load Testing (Large Dataset)
 
 ```bash
-dotnet run -- reset --products 100000 --users 10000
+dotnet run -- reset --products 1000 --users 100
 ```
 
 Great for performance testing and benchmarking.
@@ -182,7 +182,7 @@ dotnet run -- migrate
 dotnet run -- seed --force --products 50000 --users 5000
 
 # 3. Automate in scripts
-./seeder.ps1 reset && ./seeder.ps1 seed --products 10000
+./seeder.ps1 reset && ./seeder.ps1 seed --products 100
 ```
 
 ---

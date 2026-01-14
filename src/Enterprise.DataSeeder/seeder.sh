@@ -22,7 +22,7 @@ if [ -z "$1" ]; then
     echo "  ./seeder.sh seed --products 50000 --users 5000"
     echo "  ./seeder.sh clear --confirm"
     echo "  ./seeder.sh migrate"
-    echo "  ./seeder.sh reset --products 10000"
+    echo "  ./seeder.sh reset --products 100"
     echo ""
     echo -e "\033[1;33mFor more help: ./seeder.sh help\033[0m"
     exit 0

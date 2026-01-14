@@ -62,8 +62,8 @@ dotnet run -- reset
 
 ## Default Values
 
-- **Products**: 10,000
-- **Users**: 1,000
+- **Products**: 100
+- **Users**: 10
 
 ## Default Seeded Users
 
@@ -91,7 +91,7 @@ dotnet run -- reset --products 1000 --users 100
 ### Load Testing
 
 ```bash
-dotnet run -- reset --products 100000 --users 10000
+dotnet run -- reset --products 1000 --users 100
 ```
 
 ### Clear and Re-seed

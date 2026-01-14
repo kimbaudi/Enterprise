@@ -48,7 +48,7 @@ dotnet run seed --products 1000 --users 100 --force
 
 **Options:**
 
-- `--products <number>`: Number of products to seed (default: 10000)
+- `--products <number>`: Number of products to seed (default: 100)
 - `--users <number>`: Number of users to seed (default: 1000)
 - `--force`: Force seeding even if data already exists
 
@@ -97,7 +97,7 @@ dotnet run reset --products 5000 --users 500
 
 **Options:**
 
-- `--products <number>`: Number of products to seed (default: 10000)
+- `--products <number>`: Number of products to seed (default: 100)
 - `--users <number>`: Number of users to seed (default: 1000)
 
 **Warning:** This completely destroys and recreates the database. All data will be lost!
@@ -150,7 +150,7 @@ dotnet run seed
 
 ```bash
 # Seed large dataset for performance testing
-dotnet run seed --products 100000 --users 10000
+dotnet run seed --products 1000 --users 100
 ```
 
 ### Clean Slate

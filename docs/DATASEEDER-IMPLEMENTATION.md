@@ -32,7 +32,7 @@ Created a comprehensive command-line utility for database seeding and management
 ### Command-Line Arguments
 
 ```bash
-# Seed with default counts (10k products, 1k users)
+# Seed with default counts (100 products, 10 users)
 dotnet run -- seed
 
 # Custom counts
@@ -88,14 +88,14 @@ dotnet run -- seed
 ### Load Testing Dataset
 
 ```bash
-dotnet run -- reset --products 100000 --users 10000
+dotnet run -- reset --products 1000 --users 100
 ```
 
 ### Clear and Re-seed
 
 ```bash
 dotnet run -- clear --confirm
-dotnet run -- seed --products 20000 --users 2000
+dotnet run -- seed --products 200 --users 20
 ```
 
 ### Using Helper Scripts
@@ -176,6 +176,7 @@ Program.cs
 
 Expected seeding times:
 
+- 100 products + 10 users: ~1-3 seconds
 - 10k products + 1k users: ~30-60 seconds
 - 50k products + 5k users: ~2-5 minutes
 - 100k products + 10k users: ~5-10 minutes
