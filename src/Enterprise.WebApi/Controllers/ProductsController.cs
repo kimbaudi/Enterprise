@@ -4,6 +4,7 @@ using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Products.Commands.CreateProduct;
 using Enterprise.Application.Features.Products.Commands.DeleteProduct;
 using Enterprise.Application.Features.Products.Commands.UpdateProduct;
+using Enterprise.Application.Features.Products.Commands.UploadProductImage;
 using Enterprise.Application.Features.Products.Queries.GetAllProducts;
 using Enterprise.Application.Features.Products.Queries.GetProductById;
 using Enterprise.Application.Features.Products.Queries.GetProductsByCategory;
@@ -154,5 +155,38 @@ public class ProductsController : ControllerBase
         _logger.LogInformation("Deleting product with ID: {ProductId}", id);
         await _mediator.Send(new DeleteProductCommand(id), cancellationToken);
         return Ok(new ApiResponse<object>(null!, "Product deleted successfully"));
+    }
+
+    /// <summary>
+    /// Upload product image
+    /// </summary>
+    [HttpPost("{id:guid}/image")]
+    [EnableRateLimiting("expensive")]
+    [ProducesResponseType(typeof(ApiResponse<UploadProductImageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<UploadProductImageResponse>>> UploadProductImage(
+        Guid id,
+        IFormFile file,
+        CancellationToken cancellationToken)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new ApiResponse<object>(null!, "No file uploaded"));
+        }
+
+        _logger.LogInformation("Uploading image for product: {ProductId}, File: {FileName}, Size: {FileSize}",
+            id, file.FileName, file.Length);
+
+        using var stream = file.OpenReadStream();
+        var command = new UploadProductImageCommand(
+            id,
+            stream,
+            file.FileName,
+            file.ContentType,
+            file.Length);
+
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<UploadProductImageResponse>(result, "Image uploaded successfully"));
     }
 }

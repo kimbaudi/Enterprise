@@ -1,9 +1,13 @@
 using Asp.Versioning;
 using Enterprise.Application;
+using Enterprise.Application.BackgroundJobs;
 using Enterprise.Application.Common.Interfaces;
 using Enterprise.Infrastructure;
+using Enterprise.WebApi.Common;
 using Enterprise.WebApi.Middleware;
 using Enterprise.WebApi.Services;
+using Hangfire;
+using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
@@ -210,6 +214,27 @@ try
     // Add CurrentUserService
     builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+    // Add Hangfire services
+    builder.Services.AddHangfire(configuration => configuration
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"), new SqlServerStorageOptions
+        {
+            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+            QueuePollInterval = TimeSpan.Zero,
+            UseRecommendedIsolationLevel = true,
+            DisableGlobalLocks = true
+        }));
+
+    // Add the processing server as IHostedService
+    builder.Services.AddHangfireServer();
+
+    // Register background jobs
+    builder.Services.AddScoped<DatabaseCleanupJob>();
+    builder.Services.AddScoped<ReportGenerationJob>();
+
     var app = builder.Build();
 
     // Configure the HTTP request pipeline
@@ -230,10 +255,24 @@ try
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "Enterprise Web API v1");
             c.RoutePrefix = "swagger"; // Set Swagger UI at /swagger
         });
+
+        // Hangfire Dashboard (development only for security)
+        app.UseHangfireDashboard("/hangfire", new DashboardOptions
+        {
+            Authorization = new[] { new HangfireAuthorizationFilter() }
+        });
     }
 
     // Add Response Caching Middleware
     app.UseResponseCaching();
+
+    // Serve static files from uploads directory
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+            Path.Combine(Directory.GetCurrentDirectory(), "uploads")),
+        RequestPath = "/uploads"
+    });
 
     // Add security headers
     app.Use(async (context, next) =>
@@ -278,6 +317,17 @@ try
         }
     });
     app.MapHealthChecks("/health/live");
+
+    // Configure recurring background jobs
+    RecurringJob.AddOrUpdate<DatabaseCleanupJob>(
+        "cleanup-expired-tokens",
+        job => job.CleanupExpiredTokensAsync(),
+        Cron.Daily); // Runs daily at midnight
+
+    RecurringJob.AddOrUpdate<ReportGenerationJob>(
+        "daily-summary-report",
+        job => job.GenerateDailySummaryAsync(),
+        Cron.Daily(8)); // Runs daily at 8 AM
 
     app.Run();
 }

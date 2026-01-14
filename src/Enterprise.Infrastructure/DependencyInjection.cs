@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
 
         // Current User Service - registered here but implemented in WebApi
         // Will be registered in WebApi as: services.AddScoped<ICurrentUserService, CurrentUserService>();
