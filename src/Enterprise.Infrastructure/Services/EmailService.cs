@@ -1,15 +1,28 @@
 using Enterprise.Application.Common.Interfaces;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace Enterprise.Infrastructure.Services;
 
 public class EmailService : IEmailService
 {
     private readonly ILogger<EmailService> _logger;
+    private readonly IConfiguration _configuration;
+    private readonly string? _sendGridApiKey;
+    private readonly string _fromEmail;
+    private readonly string _fromName;
 
-    public EmailService(ILogger<EmailService> logger)
+    public EmailService(
+        ILogger<EmailService> logger,
+        IConfiguration configuration)
     {
         _logger = logger;
+        _configuration = configuration;
+        _sendGridApiKey = _configuration["EmailSettings:SendGridApiKey"];
+        _fromEmail = _configuration["EmailSettings:FromEmail"] ?? "noreply@enterprise.com";
+        _fromName = _configuration["EmailSettings:FromName"] ?? "Enterprise";
     }
 
     public async Task SendPasswordResetEmailAsync(string toEmail, string toName, string resetToken, CancellationToken cancellationToken = default)
@@ -44,15 +57,51 @@ public class EmailService : IEmailService
 
     public async Task SendEmailAsync(string toEmail, string subject, string htmlBody, CancellationToken cancellationToken = default)
     {
-        // TODO: Implement actual email sending using SendGrid, AWS SES, or SMTP
-        // For now, just log the email
-        _logger.LogInformation(
-            "Email would be sent to {ToEmail} with subject: {Subject}",
-            toEmail,
-            subject);
+        // If SendGrid API key is not configured, fall back to logging only (for development)
+        if (string.IsNullOrEmpty(_sendGridApiKey))
+        {
+            _logger.LogWarning(
+                "SendGrid API key not configured. Email would be sent to {ToEmail} with subject: {Subject}",
+                toEmail,
+                subject);
+            _logger.LogDebug("Email body: {HtmlBody}", htmlBody);
+            return;
+        }
 
-        _logger.LogDebug("Email body: {HtmlBody}", htmlBody);
+        try
+        {
+            var client = new SendGridClient(_sendGridApiKey);
+            var from = new EmailAddress(_fromEmail, _fromName);
+            var to = new EmailAddress(toEmail);
+            var msg = MailHelper.CreateSingleEmail(from, to, subject, htmlBody, htmlBody);
 
-        await Task.CompletedTask;
+            var response = await client.SendEmailAsync(msg, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation(
+                    "Email successfully sent to {ToEmail} with subject: {Subject}",
+                    toEmail,
+                    subject);
+            }
+            else
+            {
+                var errorBody = await response.Body.ReadAsStringAsync(cancellationToken);
+                _logger.LogError(
+                    "Failed to send email to {ToEmail}. Status: {StatusCode}, Error: {Error}",
+                    toEmail,
+                    response.StatusCode,
+                    errorBody);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Exception occurred while sending email to {ToEmail} with subject: {Subject}",
+                toEmail,
+                subject);
+            throw;
+        }
     }
 }

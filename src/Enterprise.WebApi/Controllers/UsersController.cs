@@ -2,6 +2,7 @@ using Asp.Versioning;
 using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Users.Commands.CreateUser;
 using Enterprise.Application.Features.Users.Commands.UpdateUser;
+using Enterprise.Application.Features.Users.Queries.GetUserById;
 using Enterprise.WebApi.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -63,7 +64,7 @@ public class UsersController : ControllerBase
     }
 
     /// <summary>
-    /// Get user by ID (placeholder for implementation)
+    /// Get user by ID
     /// </summary>
     [HttpGet("{id}")]
     [Authorize(Roles = "Admin")]
@@ -71,7 +72,8 @@ public class UsersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<UserDto>>> GetUserById(Guid id, CancellationToken cancellationToken)
     {
-        // TODO: Implement GetUserByIdQuery
-        return NotFound(new ApiResponse<UserDto>("GetUserById not yet implemented"));
+        var query = new GetUserByIdQuery(id);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(new ApiResponse<UserDto>(result));
     }
 }
