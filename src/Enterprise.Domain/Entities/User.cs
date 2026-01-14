@@ -16,6 +16,11 @@ public class User : BaseEntity
     public string? PasswordResetToken { get; set; }
     public DateTime? PasswordResetTokenExpiry { get; set; }
 
+    // Two-Factor Authentication
+    public bool TwoFactorEnabled { get; set; }
+    public string? TwoFactorSecret { get; set; }
+    public string? RecoveryCodes { get; set; } // JSON array of recovery codes
+
     // Navigation property for roles
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
 

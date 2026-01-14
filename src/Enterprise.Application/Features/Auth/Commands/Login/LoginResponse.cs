@@ -11,4 +11,6 @@ public class LoginResponse
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public List<string> Roles { get; set; } = new();
+    public bool RequiresTwoFactor { get; set; }
+    public Guid? TwoFactorUserId { get; set; } // Used for 2FA validation
 }

@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<ITwoFactorService, TwoFactorService>();
 
         // Background Services
         services.AddHostedService<AuditLogProcessor>();

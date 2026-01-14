@@ -76,6 +76,20 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         user.LockoutEnd = null;
         user.LastLoginAt = DateTime.UtcNow;
         await _userRepository.UpdateAsync(user, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Check if 2FA is enabled
+        if (user.TwoFactorEnabled)
+        {
+            // Return response indicating 2FA is required
+            return new LoginResponse
+            {
+                RequiresTwoFactor = true,
+                TwoFactorUserId = user.Id,
+                Username = user.Username,
+                Email = user.Email
+            };
+        }
 
         // Generate tokens
         var accessToken = _jwtTokenService.GenerateAccessToken(user);
@@ -94,7 +108,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
             Email = user.Email,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList()
+            Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList(),
+            RequiresTwoFactor = false
         };
     }
 }

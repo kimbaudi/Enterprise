@@ -1,13 +1,21 @@
 using Asp.Versioning;
+using Enterprise.Application.DTOs;
+using Enterprise.Application.Features.Auth.Commands.Disable2FA;
+using Enterprise.Application.Features.Auth.Commands.Enable2FA;
 using Enterprise.Application.Features.Auth.Commands.ForgotPassword;
 using Enterprise.Application.Features.Auth.Commands.Login;
 using Enterprise.Application.Features.Auth.Commands.RefreshToken;
 using Enterprise.Application.Features.Auth.Commands.Register;
 using Enterprise.Application.Features.Auth.Commands.ResetPassword;
+using Enterprise.Application.Features.Auth.Commands.Validate2FA;
+using Enterprise.Application.Features.Auth.Commands.Verify2FA;
+using Enterprise.Application.Features.Auth.Queries.Get2FAStatus;
 using Enterprise.WebApi.Common;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Security.Claims;
 
 namespace Enterprise.WebApi.Controllers;
 
@@ -93,6 +101,106 @@ public class AuthController : ControllerBase
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(new ApiResponse<ResetPasswordResponse>(result));
     }
+
+    /// <summary>
+    /// Enable two-factor authentication for the current user
+    /// </summary>
+    [HttpPost("2fa/enable")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<Enable2FAResponse>>> Enable2FA(CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var command = new Enable2FACommand(userId);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<Enable2FAResponse>(result));
+    }
+
+    /// <summary>
+    /// Verify two-factor authentication setup by validating the code
+    /// </summary>
+    [HttpPost("2fa/verify")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<Verify2FAResponse>>> Verify2FA(
+        [FromBody] Verify2FARequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var command = new Verify2FACommand(userId, request.Code);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<Verify2FAResponse>(result));
+    }
+
+    /// <summary>
+    /// Validate two-factor authentication code during login
+    /// </summary>
+    [HttpPost("2fa/validate")]
+    public async Task<ActionResult<ApiResponse<Validate2FAResponse>>> Validate2FA(
+        [FromBody] Validate2FARequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new Validate2FACommand(request.UserId, request.Code, GetClientIpAddress());
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<Validate2FAResponse>(result));
+    }
+
+    /// <summary>
+    /// Disable two-factor authentication for the current user
+    /// </summary>
+    [HttpPost("2fa/disable")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<bool>>> Disable2FA(
+        [FromBody] Disable2FARequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var command = new Disable2FACommand(userId, request.Code);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<bool>(result));
+    }
+
+    /// <summary>
+    /// Get two-factor authentication status for the current user
+    /// </summary>
+    [HttpGet("2fa/status")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<TwoFactorStatusResponse>>> Get2FAStatus(CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        var query = new Get2FAStatusQuery(userId);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(new ApiResponse<TwoFactorStatusResponse>(result));
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            throw new UnauthorizedAccessException("User ID not found in token");
+        }
+        return userId;
+    }
+
+    private string GetClientIpAddress()
+    {
+        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
+    }
+}
+
+public class Verify2FARequest
+{
+    public string Code { get; set; } = string.Empty;
+}
+
+public class Validate2FARequest
+{
+    public Guid UserId { get; set; }
+    public string Code { get; set; } = string.Empty;
+}
+
+public class Disable2FARequest
+{
+    public string Code { get; set; } = string.Empty;
 }
 
 public class LoginRequest
