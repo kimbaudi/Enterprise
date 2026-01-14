@@ -3,8 +3,10 @@ using Enterprise.Application.Common.Models;
 using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Products.Commands.CreateProduct;
 using Enterprise.Application.Features.Products.Commands.DeleteProduct;
+using Enterprise.Application.Features.Products.Commands.RestoreProduct;
 using Enterprise.Application.Features.Products.Commands.UpdateProduct;
 using Enterprise.Application.Features.Products.Commands.UploadProductImage;
+using Enterprise.Application.Features.Products.Queries.GetDeletedProducts;
 using Enterprise.Application.Features.Products.Queries.GetProductById;
 using Enterprise.Application.Features.Products.Queries.GetProductsByCategory;
 using Enterprise.Application.Features.Products.Queries.GetProductsPaginated;
@@ -149,6 +151,37 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<ApiResponse<bool>>> DeleteProduct(Guid id, CancellationToken cancellationToken)
     {
         var command = new DeleteProductCommand(id);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<bool>(result));
+    }
+
+    /// <summary>
+    /// Get all deleted products with pagination (Admin only)
+    /// </summary>
+    [HttpGet("deleted")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<PaginatedResult<ProductDto>>>> GetDeletedProducts(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetDeletedProductsQuery(pageNumber, pageSize);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(new ApiResponse<PaginatedResult<ProductDto>>(result));
+    }
+
+    /// <summary>
+    /// Restore a soft-deleted product (Admin only)
+    /// </summary>
+    [HttpPost("{id}/restore")]
+    [Authorize(Roles = "Admin")]
+    [EnableRateLimiting("expensive")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<bool>>> RestoreProduct(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new RestoreProductCommand(id);
         var result = await _mediator.Send(command, cancellationToken);
         return Ok(new ApiResponse<bool>(result));
     }

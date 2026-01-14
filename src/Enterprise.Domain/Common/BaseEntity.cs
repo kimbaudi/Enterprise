@@ -2,7 +2,7 @@ using Enterprise.Domain.Interfaces;
 
 namespace Enterprise.Domain.Common;
 
-public abstract class BaseEntity : IAuditableEntity
+public abstract class BaseEntity : IAuditableEntity, ISoftDeletable
 {
     public Guid Id { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -10,4 +10,6 @@ public abstract class BaseEntity : IAuditableEntity
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedBy { get; set; }
     public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
 }

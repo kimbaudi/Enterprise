@@ -43,6 +43,18 @@ public class ApplicationDbContext : DbContext
                 case EntityState.Modified:
                     entry.Entity.UpdatedAt = DateTime.UtcNow;
                     entry.Entity.UpdatedBy = _currentUserService?.Username ?? "System";
+
+                    // Handle soft delete tracking
+                    if (entry.Entity is ISoftDeletable softDeletable)
+                    {
+                        // Check if IsDeleted changed from false to true
+                        var isDeletedProperty = entry.Property(nameof(ISoftDeletable.IsDeleted));
+                        if (isDeletedProperty.IsModified && softDeletable.IsDeleted && !softDeletable.DeletedAt.HasValue)
+                        {
+                            softDeletable.DeletedAt = DateTime.UtcNow;
+                            softDeletable.DeletedBy = _currentUserService?.Username ?? "System";
+                        }
+                    }
                     break;
             }
         }
@@ -121,6 +133,11 @@ public class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.Email)
                 .IsUnique();
+
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false);
+
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // Role configuration
@@ -137,6 +154,11 @@ public class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.Name)
                 .IsUnique();
+
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false);
+
+            entity.HasQueryFilter(e => !e.IsDeleted);
 
             // Seed default roles
             entity.HasData(
@@ -160,6 +182,11 @@ public class ApplicationDbContext : DbContext
                 .WithMany(r => r.UserRoles)
                 .HasForeignKey(ur => ur.RoleId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false);
+
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // RefreshToken configuration
@@ -185,6 +212,11 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false);
+
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // AuditLog configuration
@@ -208,6 +240,12 @@ public class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.Timestamp);
             entity.HasIndex(e => e.EntityName);
+
+            entity.Property(e => e.IsDeleted)
+                .HasDefaultValue(false);
+
+            // AuditLog typically shouldn't be soft-deleted, but apply filter for consistency
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
     }
 }

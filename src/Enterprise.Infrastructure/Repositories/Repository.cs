@@ -80,6 +80,69 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         return Task.CompletedTask;
     }
 
+    public async Task RestoreAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var entity = await GetDeletedByIdAsync(id, cancellationToken);
+        if (entity != null)
+        {
+            entity.IsDeleted = false;
+            entity.DeletedAt = null;
+            entity.DeletedBy = null;
+            await UpdateAsync(entity, cancellationToken);
+        }
+    }
+
+    public Task RestoreRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+    {
+        foreach (var entity in entities)
+        {
+            entity.IsDeleted = false;
+            entity.DeletedAt = null;
+            entity.DeletedBy = null;
+        }
+        _dbSet.UpdateRange(entities);
+        return Task.CompletedTask;
+    }
+
+    public async Task<T?> GetDeletedByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(e => e.Id == id && e.IsDeleted, cancellationToken);
+    }
+
+    public async Task<IEnumerable<T>> GetAllDeletedAsync(CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.IgnoreQueryFilters()
+            .Where(e => e.IsDeleted)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<(IEnumerable<T> Items, int TotalCount)> GetDeletedPagedAsync(
+        int pageNumber,
+        int pageSize,
+        Expression<Func<T, object>>? orderBy = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbSet.IgnoreQueryFilters()
+            .Where(e => e.IsDeleted)
+            .AsNoTracking();
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        if (orderBy != null)
+        {
+            query = query.OrderBy(orderBy);
+        }
+
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+
     public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default)
     {
         return predicate == null
