@@ -8,25 +8,22 @@ namespace Enterprise.Application.Common.Behaviors;
 
 /// <summary>
 /// Pipeline behavior that automatically logs all command operations to the audit log.
-/// Captures before/after state for tracking data changes.
+/// Enqueues audit logs for background processing to avoid blocking requests.
 /// </summary>
 public class AuditLoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     private readonly ICurrentUserService _currentUserService;
-    private readonly IAuditLogRepository _auditLogRepository;
-    private readonly IUnitOfWork _unitOfWork;
+    private readonly IAuditLogQueue _auditLogQueue;
     private readonly ILogger<AuditLoggingBehavior<TRequest, TResponse>> _logger;
 
     public AuditLoggingBehavior(
         ICurrentUserService currentUserService,
-        IAuditLogRepository auditLogRepository,
-        IUnitOfWork unitOfWork,
+        IAuditLogQueue auditLogQueue,
         ILogger<AuditLoggingBehavior<TRequest, TResponse>> logger)
     {
         _currentUserService = currentUserService;
-        _auditLogRepository = auditLogRepository;
-        _unitOfWork = unitOfWork;
+        _auditLogQueue = auditLogQueue;
         _logger = logger;
     }
 
@@ -107,19 +104,22 @@ public class AuditLoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequ
             Timestamp = DateTime.UtcNow
         };
 
+        // Enqueue for background processing (non-blocking)
         try
         {
-            await _auditLogRepository.AddAsync(auditLog, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            var enqueued = await _auditLogQueue.EnqueueAsync(auditLog, cancellationToken);
 
-            _logger.LogInformation(
-                "Audit log created: User {Username} performed {Action} on {EntityName} (ID: {EntityId})",
-                username, action, entityName, entityId);
+            if (!enqueued)
+            {
+                _logger.LogWarning(
+                    "Failed to enqueue audit log: User {Username} performed {Action} on {EntityName} (ID: {EntityId})",
+                    username, action, entityName, entityId);
+            }
         }
         catch (Exception ex)
         {
             // Don't fail the request if audit logging fails
-            _logger.LogError(ex, "Failed to create audit log for {RequestName}", requestName);
+            _logger.LogError(ex, "Error enqueueing audit log for {RequestName}", requestName);
         }
 
         return response;

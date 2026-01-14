@@ -1,8 +1,8 @@
 using Asp.Versioning;
 using Enterprise.Application;
-using Enterprise.Application.BackgroundJobs;
 using Enterprise.Application.Common.Interfaces;
 using Enterprise.Infrastructure;
+using Enterprise.Infrastructure.BackgroundJobs;
 using Enterprise.WebApi.Common;
 using Enterprise.WebApi.Middleware;
 using Enterprise.WebApi.Services;
@@ -287,7 +287,7 @@ try
     // Add the processing server as IHostedService
     builder.Services.AddHangfireServer();
 
-    // Register background jobs
+    // Register background jobs (from Infrastructure layer)
     builder.Services.AddScoped<DatabaseCleanupJob>();
     builder.Services.AddScoped<ReportGenerationJob>();
 

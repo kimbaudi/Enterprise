@@ -1,4 +1,5 @@
 using Enterprise.Application.Common.Interfaces;
+using Enterprise.Infrastructure.BackgroundServices;
 using Enterprise.Infrastructure.Persistence;
 using Enterprise.Infrastructure.Repositories;
 using Enterprise.Infrastructure.Services;
@@ -31,6 +32,9 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IEmailService, EmailService>();
+
+        // Background Services
+        services.AddHostedService<AuditLogProcessor>();
 
         return services;
     }

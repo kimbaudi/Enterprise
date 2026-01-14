@@ -2,7 +2,7 @@ using Enterprise.Application.Common.Interfaces;
 using Enterprise.Domain.Entities;
 using Microsoft.Extensions.Logging;
 
-namespace Enterprise.Application.BackgroundJobs;
+namespace Enterprise.Infrastructure.BackgroundJobs;
 
 public class ReportGenerationJob
 {

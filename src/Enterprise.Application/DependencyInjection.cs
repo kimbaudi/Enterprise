@@ -3,6 +3,8 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Enterprise.Application.Common.Behaviors;
 using Enterprise.Application.Mappings;
+using Enterprise.Application.Common.Interfaces;
+using Enterprise.Application.Services;
 
 namespace Enterprise.Application;
 
@@ -18,6 +20,9 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuditLoggingBehavior<,>));
+
+        // Audit Log Queue (Singleton - shared across all requests)
+        services.AddSingleton<IAuditLogQueue, AuditLogQueue>();
 
         // AutoMapper
         services.AddAutoMapper(config =>
