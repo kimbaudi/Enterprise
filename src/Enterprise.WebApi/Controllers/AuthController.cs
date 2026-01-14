@@ -1,16 +1,20 @@
 using Asp.Versioning;
+using Enterprise.Application.Features.Auth.Commands.ForgotPassword;
 using Enterprise.Application.Features.Auth.Commands.Login;
 using Enterprise.Application.Features.Auth.Commands.RefreshToken;
 using Enterprise.Application.Features.Auth.Commands.Register;
+using Enterprise.Application.Features.Auth.Commands.ResetPassword;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Enterprise.WebApi.Controllers;
 
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
+[EnableRateLimiting("auth")]
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -131,6 +135,39 @@ public class AuthController : ControllerBase
             Claims = claims
         });
     }
+
+    /// <summary>
+    /// Request a password reset token
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ForgotPasswordResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ForgotPasswordResponse>> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        var command = new ForgotPasswordCommand(request.Email);
+        var response = await _mediator.Send(command);
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Reset password using token
+    /// </summary>
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ResetPasswordResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ResetPasswordResponse>> ResetPassword([FromBody] ResetPasswordRequest request)
+    {
+        var command = new ResetPasswordCommand(
+            request.Email,
+            request.Token,
+            request.NewPassword,
+            request.ConfirmPassword);
+
+        var response = await _mediator.Send(command);
+        return Ok(response);
+    }
 }
 
 public class LoginRequest
@@ -147,6 +184,19 @@ public class RegisterRequest
     public string ConfirmPassword { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
+}
+
+public class ForgotPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ResetPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Token { get; set; } = string.Empty;
+    public string NewPassword { get; set; } = string.Empty;
+    public string ConfirmPassword { get; set; } = string.Empty;
 }
 
 public class RefreshTokenRequest

@@ -1,12 +1,16 @@
 using Asp.Versioning;
 using Enterprise.Application;
+using Enterprise.Application.Common.Interfaces;
 using Enterprise.Infrastructure;
 using Enterprise.WebApi.Middleware;
+using Enterprise.WebApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
+using System.Threading.RateLimiting;
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
@@ -22,6 +26,9 @@ try
 
     // Add Serilog
     builder.Host.UseSerilog();
+
+    // Add HttpContextAccessor for CurrentUserService
+    builder.Services.AddHttpContextAccessor();
 
     // Add services to the container
     builder.Services.AddControllers();
@@ -144,6 +151,51 @@ try
         });
     }
 
+    // Add Rate Limiting
+    builder.Services.AddRateLimiter(options =>
+    {
+        // Global rate limit: 100 requests per minute per IP
+        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                factory: partition => new FixedWindowRateLimiterOptions
+                {
+                    AutoReplenishment = true,
+                    PermitLimit = 100,
+                    QueueLimit = 0,
+                    Window = TimeSpan.FromMinutes(1)
+                }));
+
+        // Specific policy for authentication endpoints - more restrictive
+        options.AddFixedWindowLimiter("auth", options =>
+        {
+            options.PermitLimit = 10;
+            options.Window = TimeSpan.FromMinutes(1);
+            options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            options.QueueLimit = 2;
+        });
+
+        // Policy for general API endpoints
+        options.AddFixedWindowLimiter("api", options =>
+        {
+            options.PermitLimit = 60;
+            options.Window = TimeSpan.FromMinutes(1);
+            options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            options.QueueLimit = 5;
+        });
+
+        // Policy for expensive operations (bulk operations, exports)
+        options.AddFixedWindowLimiter("expensive", options =>
+        {
+            options.PermitLimit = 10;
+            options.Window = TimeSpan.FromMinutes(5);
+            options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            options.QueueLimit = 0;
+        });
+
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    });
+
     // Add Health Checks
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     builder.Services.AddHealthChecks()
@@ -154,6 +206,9 @@ try
     // Add Application and Infrastructure layers
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
+
+    // Add CurrentUserService
+    builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
     var app = builder.Build();
 
@@ -191,6 +246,9 @@ try
     });
 
     app.UseCors("AllowAll");
+
+    // Add Rate Limiting Middleware (must be after routing, before auth)
+    app.UseRateLimiter();
 
     app.UseAuthentication();
     app.UseAuthorization();

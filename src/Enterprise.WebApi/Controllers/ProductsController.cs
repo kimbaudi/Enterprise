@@ -11,12 +11,14 @@ using Enterprise.Application.Features.Products.Queries.GetProductsPaginated;
 using Enterprise.WebApi.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Enterprise.WebApi.Controllers;
 
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
+[EnableRateLimiting("api")]
 public class ProductsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -53,7 +55,7 @@ public class ProductsController : ControllerBase
     {
         _logger.LogInformation("Getting product with ID: {ProductId}", id);
         var product = await _mediator.Send(new GetProductByIdQuery(id), cancellationToken);
-        
+
         if (product == null)
         {
             return NotFound(new ApiResponse<ProductDto>($"Product with ID {id} not found"));
@@ -100,7 +102,7 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<ApiResponse<ProductDto>>> CreateProduct([FromBody] CreateProductDto createProductDto, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Creating new product: {ProductName}", createProductDto.Name);
-        
+
         var command = new CreateProductCommand(
             createProductDto.Name,
             createProductDto.Description,
@@ -112,7 +114,7 @@ public class ProductsController : ControllerBase
 
         // Validation is handled by ValidationBehavior pipeline
         var product = await _mediator.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, 
+        return CreatedAtAction(nameof(GetProductById), new { id = product.Id },
             new ApiResponse<ProductDto>(product, "Product created successfully"));
     }
 
@@ -126,7 +128,7 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<ApiResponse<ProductDto>>> UpdateProduct(Guid id, [FromBody] UpdateProductDto updateProductDto, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Updating product with ID: {ProductId}", id);
-        
+
         var command = new UpdateProductCommand(
             id,
             updateProductDto.Name,

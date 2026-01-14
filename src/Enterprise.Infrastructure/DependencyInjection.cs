@@ -24,10 +24,14 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
-        
+
         // Services
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IEmailService, EmailService>();
+
+        // Current User Service - registered here but implemented in WebApi
+        // Will be registered in WebApi as: services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         return services;
     }

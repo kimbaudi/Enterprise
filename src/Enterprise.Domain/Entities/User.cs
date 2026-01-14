@@ -13,9 +13,16 @@ public class User : BaseEntity
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }
     public DateTime? LastLoginAt { get; set; }
-    
+    public string? PasswordResetToken { get; set; }
+    public DateTime? PasswordResetTokenExpiry { get; set; }
+
     // Navigation property for roles
     public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
-    
+
     public bool IsLockedOut => LockoutEnd.HasValue && LockoutEnd.Value > DateTime.UtcNow;
+    public bool HasValidPasswordResetToken(string token) =>
+        !string.IsNullOrEmpty(PasswordResetToken) &&
+        PasswordResetToken == token &&
+        PasswordResetTokenExpiry.HasValue &&
+        PasswordResetTokenExpiry.Value > DateTime.UtcNow;
 }

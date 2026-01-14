@@ -1,3 +1,5 @@
+using Enterprise.Application.Common.Interfaces;
+using Enterprise.Domain.Common;
 using Enterprise.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -5,9 +7,19 @@ namespace Enterprise.Infrastructure.Persistence;
 
 public class ApplicationDbContext : DbContext
 {
+    private readonly ICurrentUserService? _currentUserService;
+
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
+    }
+
+    public ApplicationDbContext(
+        DbContextOptions<ApplicationDbContext> options,
+        ICurrentUserService currentUserService)
+        : base(options)
+    {
+        _currentUserService = currentUserService;
     }
 
     public DbSet<Product> Products { get; set; }
@@ -15,6 +27,28 @@ public class ApplicationDbContext : DbContext
     public DbSet<Role> Roles { get; set; }
     public DbSet<UserRole> UserRoles { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<AuditLog> AuditLogs { get; set; }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        // Set audit fields
+        foreach (var entry in ChangeTracker.Entries<IAuditableEntity>())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Entity.CreatedAt = DateTime.UtcNow;
+                    entry.Entity.CreatedBy = _currentUserService?.Username ?? "System";
+                    break;
+                case EntityState.Modified:
+                    entry.Entity.UpdatedAt = DateTime.UtcNow;
+                    entry.Entity.UpdatedBy = _currentUserService?.Username ?? "System";
+                    break;
+            }
+        }
+
+        return await base.SaveChangesAsync(cancellationToken);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,7 +57,7 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Product>(entity =>
         {
             entity.HasKey(e => e.Id);
-            
+
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(100);
@@ -63,28 +97,28 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id);
-            
+
             entity.Property(e => e.Username)
                 .IsRequired()
                 .HasMaxLength(50);
-            
+
             entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(100);
-            
+
             entity.Property(e => e.PasswordHash)
                 .IsRequired()
                 .HasMaxLength(255);
-            
+
             entity.Property(e => e.FirstName)
                 .HasMaxLength(50);
-            
+
             entity.Property(e => e.LastName)
                 .HasMaxLength(50);
 
             entity.HasIndex(e => e.Username)
                 .IsUnique();
-            
+
             entity.HasIndex(e => e.Email)
                 .IsUnique();
         });
@@ -93,11 +127,11 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Role>(entity =>
         {
             entity.HasKey(e => e.Id);
-            
+
             entity.Property(e => e.Name)
                 .IsRequired()
                 .HasMaxLength(50);
-            
+
             entity.Property(e => e.Description)
                 .HasMaxLength(200);
 
@@ -132,15 +166,15 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<RefreshToken>(entity =>
         {
             entity.HasKey(e => e.Id);
-            
+
             entity.Property(e => e.Token)
                 .IsRequired()
                 .HasMaxLength(255);
-            
+
             entity.Property(e => e.CreatedByIp)
                 .IsRequired()
                 .HasMaxLength(50);
-            
+
             entity.Property(e => e.RevokedByIp)
                 .HasMaxLength(50);
 
@@ -151,6 +185,29 @@ public class ApplicationDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // AuditLog configuration
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Action)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            entity.Property(e => e.EntityName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.Property(e => e.Username)
+                .HasMaxLength(50);
+
+            entity.Property(e => e.IpAddress)
+                .HasMaxLength(50);
+
+            entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.EntityName);
         });
     }
 }
