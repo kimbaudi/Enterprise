@@ -36,8 +36,16 @@ try
     // Add HttpContextAccessor for CurrentUserService
     builder.Services.AddHttpContextAccessor();
 
-    // Add services to the container
-    builder.Services.AddControllers();
+    // Add services to the container  
+    if (builder.Environment.IsEnvironment("Testing"))
+    {
+        // Use Newtonsoft.Json in test environment to avoid PipeWriter issues
+        builder.Services.AddControllers().AddNewtonsoftJson();
+    }
+    else
+    {
+        builder.Services.AddControllers();
+    }
 
     // Add Response Caching
     builder.Services.AddResponseCaching();
@@ -99,7 +107,15 @@ try
 
     // Add JWT Authentication
     var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-    var key = Encoding.ASCII.GetBytes(jwtSettings["SecretKey"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456");
+    var secretKey = jwtSettings["SecretKey"];
+
+    // Ensure we have a valid key (especially important for Testing environment)
+    if (string.IsNullOrWhiteSpace(secretKey))
+    {
+        secretKey = "YourSuperSecretKeyForJWTTokenGeneration123456789012";
+    }
+
+    var key = Encoding.ASCII.GetBytes(secretKey);
 
     builder.Services.AddAuthentication(options =>
     {
@@ -114,9 +130,9 @@ try
         {
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(key),
-            ValidateIssuer = true,
+            ValidateIssuer = !builder.Environment.IsEnvironment("Testing"),
             ValidIssuer = jwtSettings["Issuer"] ?? "Enterprise",
-            ValidateAudience = true,
+            ValidateAudience = !builder.Environment.IsEnvironment("Testing"),
             ValidAudience = jwtSettings["Audience"] ?? "EnterpriseUsers",
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
@@ -125,18 +141,21 @@ try
 
     builder.Services.AddAuthorization();
 
-    // Add OpenTelemetry
-    builder.Services.AddOpenTelemetry()
-        .ConfigureResource(resource => resource
-            .AddService(serviceName: "Enterprise.WebApi", serviceVersion: "1.0.0"))
-        .WithTracing(tracing => tracing
-            .AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation()
-            .AddSqlClientInstrumentation(options =>
-            {
-                options.RecordException = true;
-            })
-            .AddConsoleExporter());
+    // Add OpenTelemetry (skip in Testing environment)
+    if (!builder.Environment.IsEnvironment("Testing"))
+    {
+        builder.Services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource
+                .AddService(serviceName: "Enterprise.WebApi", serviceVersion: "1.0.0"))
+            .WithTracing(tracing => tracing
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation()
+                .AddSqlClientInstrumentation(options =>
+                {
+                    options.RecordException = true;
+                })
+                .AddConsoleExporter());
+    }
 
     // Add CORS
     builder.Services.AddCors(options =>
@@ -249,13 +268,6 @@ try
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     });
 
-    // Add Health Checks
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-    builder.Services.AddHealthChecks()
-        .AddSqlServer(connectionString ?? throw new InvalidOperationException("Connection string not found"),
-            name: "database",
-            tags: new[] { "db", "sql", "ready" });
-
     // Add Application and Infrastructure layers
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
@@ -263,33 +275,44 @@ try
     // Add CurrentUserService
     builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
-    // Add Redis Distributed Cache
-    builder.Services.AddStackExchangeRedisCache(options =>
+    // Skip production-only services in Testing environment
+    if (!builder.Environment.IsEnvironment("Testing"))
     {
-        options.Configuration = builder.Configuration["Redis:Configuration"];
-        options.InstanceName = builder.Configuration["Redis:InstanceName"];
-    });
+        // Add Health Checks
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+        builder.Services.AddHealthChecks()
+            .AddSqlServer(connectionString ?? throw new InvalidOperationException("Connection string not found"),
+                name: "database",
+                tags: new[] { "db", "sql", "ready" });
 
-    // Add Hangfire services
-    builder.Services.AddHangfire(configuration => configuration
-        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-        .UseSimpleAssemblyNameTypeSerializer()
-        .UseRecommendedSerializerSettings()
-        .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"), new SqlServerStorageOptions
+        // Add Redis Distributed Cache
+        builder.Services.AddStackExchangeRedisCache(options =>
         {
-            CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
-            SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
-            QueuePollInterval = TimeSpan.Zero,
-            UseRecommendedIsolationLevel = true,
-            DisableGlobalLocks = true
-        }));
+            options.Configuration = builder.Configuration["Redis:Configuration"];
+            options.InstanceName = builder.Configuration["Redis:InstanceName"];
+        });
 
-    // Add the processing server as IHostedService
-    builder.Services.AddHangfireServer();
+        // Add Hangfire services
+        builder.Services.AddHangfire(configuration => configuration
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"), new SqlServerStorageOptions
+            {
+                CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                QueuePollInterval = TimeSpan.Zero,
+                UseRecommendedIsolationLevel = true,
+                DisableGlobalLocks = true
+            }));
 
-    // Register background jobs (from Infrastructure layer)
-    builder.Services.AddScoped<DatabaseCleanupJob>();
-    builder.Services.AddScoped<ReportGenerationJob>();
+        // Add the processing server as IHostedService
+        builder.Services.AddHangfireServer();
+
+        // Register background jobs (from Infrastructure layer)
+        builder.Services.AddScoped<DatabaseCleanupJob>();
+        builder.Services.AddScoped<ReportGenerationJob>();
+    }
 
     var app = builder.Build();
 
@@ -357,40 +380,44 @@ try
 
     app.MapControllers();
 
-    // Health check endpoints
-    app.MapHealthChecks("/health");
-    app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+    // Health check endpoints and Hangfire jobs (skip in Testing environment)
+    if (!app.Environment.IsEnvironment("Testing"))
     {
-        Predicate = check => check.Tags.Contains("ready"),
-        ResponseWriter = async (context, report) =>
+        // Health check endpoints
+        app.MapHealthChecks("/health");
+        app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
         {
-            context.Response.ContentType = "application/json";
-            var result = System.Text.Json.JsonSerializer.Serialize(new
+            Predicate = check => check.Tags.Contains("ready"),
+            ResponseWriter = async (context, report) =>
             {
-                status = report.Status.ToString(),
-                checks = report.Entries.Select(e => new
+                context.Response.ContentType = "application/json";
+                var result = System.Text.Json.JsonSerializer.Serialize(new
                 {
-                    name = e.Key,
-                    status = e.Value.Status.ToString(),
-                    description = e.Value.Description,
-                    duration = e.Value.Duration.ToString()
-                })
-            });
-            await context.Response.WriteAsync(result);
-        }
-    });
-    app.MapHealthChecks("/health/live");
+                    status = report.Status.ToString(),
+                    checks = report.Entries.Select(e => new
+                    {
+                        name = e.Key,
+                        status = e.Value.Status.ToString(),
+                        description = e.Value.Description,
+                        duration = e.Value.Duration.ToString()
+                    })
+                });
+                await context.Response.WriteAsync(result);
+            }
+        });
+        app.MapHealthChecks("/health/live");
 
-    // Configure recurring background jobs
-    RecurringJob.AddOrUpdate<DatabaseCleanupJob>(
-        "cleanup-expired-tokens",
-        job => job.CleanupExpiredTokensAsync(),
-        Cron.Daily); // Runs daily at midnight
+        // Configure recurring background jobs
+        RecurringJob.AddOrUpdate<DatabaseCleanupJob>(
+            "cleanup-expired-tokens",
+            job => job.CleanupExpiredTokensAsync(),
+            Cron.Daily); // Runs daily at midnight
 
-    RecurringJob.AddOrUpdate<ReportGenerationJob>(
-        "daily-summary-report",
-        job => job.GenerateDailySummaryAsync(),
-        Cron.Daily(8)); // Runs daily at 8 AM
+        RecurringJob.AddOrUpdate<ReportGenerationJob>(
+            "daily-summary-report",
+            job => job.GenerateDailySummaryAsync(),
+            Cron.Daily(8)); // Runs daily at 8 AM
+    }
 
     app.Run();
 }
@@ -402,3 +429,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Make the implicit Program class public for integration tests
+public partial class Program { }

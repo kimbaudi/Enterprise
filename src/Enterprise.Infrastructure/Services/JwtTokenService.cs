@@ -21,9 +21,21 @@ public class JwtTokenService : IJwtTokenService
     public string GenerateAccessToken(User user)
     {
         var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456";
-        var issuer = jwtSettings["Issuer"] ?? "Enterprise";
-        var audience = jwtSettings["Audience"] ?? "EnterpriseUsers";
+        var secretKey = jwtSettings["SecretKey"];
+        if (string.IsNullOrWhiteSpace(secretKey))
+        {
+            secretKey = "YourSuperSecretKeyForJWTTokenGeneration123456789012";
+        }
+        var issuer = jwtSettings["Issuer"];
+        if (string.IsNullOrWhiteSpace(issuer))
+        {
+            issuer = "Enterprise";
+        }
+        var audience = jwtSettings["Audience"];
+        if (string.IsNullOrWhiteSpace(audience))
+        {
+            audience = "EnterpriseUsers";
+        }
         var expirationHours = GetTokenExpirationHours();
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
@@ -63,7 +75,7 @@ public class JwtTokenService : IJwtTokenService
             UserId = userId,
             Token = GenerateSecureToken(),
             ExpiresAt = DateTime.UtcNow.AddDays(7), // Refresh token valid for 7 days
-            CreatedByIp = ipAddress
+            CreatedByIp = string.IsNullOrWhiteSpace(ipAddress) ? "Unknown" : ipAddress
         };
     }
 
@@ -96,7 +108,11 @@ public class JwtTokenService : IJwtTokenService
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var jwtSettings = _configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456";
+            var secretKey = jwtSettings["SecretKey"];
+            if (string.IsNullOrWhiteSpace(secretKey))
+            {
+                secretKey = "YourSuperSecretKeyForJWTTokenGeneration123456789012";
+            }
             var key = Encoding.UTF8.GetBytes(secretKey);
 
             tokenHandler.ValidateToken(token, new TokenValidationParameters
@@ -104,9 +120,9 @@ public class JwtTokenService : IJwtTokenService
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
                 ValidateIssuer = true,
-                ValidIssuer = jwtSettings["Issuer"] ?? "Enterprise",
+                ValidIssuer = string.IsNullOrWhiteSpace(jwtSettings["Issuer"]) ? "Enterprise" : jwtSettings["Issuer"],
                 ValidateAudience = true,
-                ValidAudience = jwtSettings["Audience"] ?? "EnterpriseUsers",
+                ValidAudience = string.IsNullOrWhiteSpace(jwtSettings["Audience"]) ? "EnterpriseUsers" : jwtSettings["Audience"],
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero
             }, out _);
@@ -139,7 +155,11 @@ public class JwtTokenService : IJwtTokenService
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var jwtSettings = _configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456";
+            var secretKey = jwtSettings["SecretKey"];
+            if (string.IsNullOrWhiteSpace(secretKey))
+            {
+                secretKey = "YourSuperSecretKeyForJWTTokenGeneration123456789012";
+            }
             var key = Encoding.UTF8.GetBytes(secretKey);
 
             var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
@@ -147,9 +167,9 @@ public class JwtTokenService : IJwtTokenService
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(key),
                 ValidateIssuer = true,
-                ValidIssuer = jwtSettings["Issuer"] ?? "Enterprise",
+                ValidIssuer = string.IsNullOrWhiteSpace(jwtSettings["Issuer"]) ? "Enterprise" : jwtSettings["Issuer"],
                 ValidateAudience = true,
-                ValidAudience = jwtSettings["Audience"] ?? "EnterpriseUsers",
+                ValidAudience = string.IsNullOrWhiteSpace(jwtSettings["Audience"]) ? "EnterpriseUsers" : jwtSettings["Audience"],
                 ValidateLifetime = false, // Don't validate lifetime for expired tokens
                 ClockSkew = TimeSpan.Zero
             }, out _);

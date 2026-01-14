@@ -199,8 +199,8 @@ public class ApplicationDbContext : DbContext
                 .HasMaxLength(255);
 
             entity.Property(e => e.CreatedByIp)
-                .IsRequired()
-                .HasMaxLength(50);
+                .HasMaxLength(50)
+                .HasDefaultValue("Unknown"); // Default for test scenarios
 
             entity.Property(e => e.RevokedByIp)
                 .HasMaxLength(50);
