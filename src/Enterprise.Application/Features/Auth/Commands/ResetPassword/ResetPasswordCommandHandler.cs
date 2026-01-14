@@ -1,6 +1,5 @@
 using Enterprise.Application.Common.Exceptions;
 using Enterprise.Application.Common.Interfaces;
-using Enterprise.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 

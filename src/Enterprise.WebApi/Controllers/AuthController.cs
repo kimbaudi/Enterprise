@@ -5,7 +5,7 @@ using Enterprise.Application.Features.Auth.Commands.Login;
 using Enterprise.Application.Features.Auth.Commands.RefreshToken;
 using Enterprise.Application.Features.Auth.Commands.Register;
 using Enterprise.Application.Features.Auth.Commands.ResetPassword;
-using Enterprise.Application.Features.Auth.Commands.RevokeToken;
+using Enterprise.WebApi.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -33,12 +33,12 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     [DisableRateLimiting] // Override: Allow more registrations
     [EnableRateLimiting("api")]
-    public async Task<ActionResult<ApiResponse<AuthResult>>> Register(
+    public async Task<ActionResult<ApiResponse<RegisterResponse>>> Register(
         [FromBody] RegisterCommand command,
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command, cancellationToken);
-        return Ok(new ApiResponse<AuthResult>(result));
+        return Ok(new ApiResponse<RegisterResponse>(result));
     }
 
     /// <summary>
@@ -47,12 +47,12 @@ public class AuthController : ControllerBase
     /// <param name="request">Login credentials</param>
     /// <returns>JWT token with expiration information</returns>
     [HttpPost("login")]
-    public async Task<ActionResult<ApiResponse<AuthResult>>> Login(
+    public async Task<ActionResult<ApiResponse<LoginResponse>>> Login(
         [FromBody] LoginCommand command,
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command, cancellationToken);
-        return Ok(new ApiResponse<AuthResult>(result));
+        return Ok(new ApiResponse<LoginResponse>(result));
     }
 
     /// <summary>
@@ -61,21 +61,12 @@ public class AuthController : ControllerBase
     /// <param name="request">Refresh token</param>
     /// <returns>New access token and refresh token</returns>
     [HttpPost("refresh-token")]
-    public async Task<ActionResult<ApiResponse<AuthResult>>> RefreshToken(
+    public async Task<ActionResult<ApiResponse<RefreshTokenResponse>>> RefreshToken(
         [FromBody] RefreshTokenCommand command,
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command, cancellationToken);
-        return Ok(new ApiResponse<AuthResult>(result));
-    }
-
-    [HttpPost("revoke-token")]
-    public async Task<ActionResult<ApiResponse<bool>>> RevokeToken(
-        [FromBody] RevokeTokenCommand command,
-        CancellationToken cancellationToken)
-    {
-        var result = await _mediator.Send(command, cancellationToken);
-        return Ok(new ApiResponse<bool>(result));
+        return Ok(new ApiResponse<RefreshTokenResponse>(result));
     }
 
     /// <summary>
@@ -83,12 +74,12 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("forgot-password")]
     [EnableRateLimiting("expensive")] // Very strict: 10 per 5 minutes
-    public async Task<ActionResult<ApiResponse<string>>> ForgotPassword(
+    public async Task<ActionResult<ApiResponse<ForgotPasswordResponse>>> ForgotPassword(
         [FromBody] ForgotPasswordCommand command,
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command, cancellationToken);
-        return Ok(new ApiResponse<string>(result));
+        return Ok(new ApiResponse<ForgotPasswordResponse>(result));
     }
 
     /// <summary>
@@ -96,12 +87,12 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("reset-password")]
     [EnableRateLimiting("expensive")]
-    public async Task<ActionResult<ApiResponse<string>>> ResetPassword(
+    public async Task<ActionResult<ApiResponse<ResetPasswordResponse>>> ResetPassword(
         [FromBody] ResetPasswordCommand command,
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(command, cancellationToken);
-        return Ok(new ApiResponse<string>(result));
+        return Ok(new ApiResponse<ResetPasswordResponse>(result));
     }
 }
 

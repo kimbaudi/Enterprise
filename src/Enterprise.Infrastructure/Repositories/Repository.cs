@@ -1,5 +1,5 @@
 using Enterprise.Domain.Common;
-using Enterprise.Domain.Interfaces;
+using Enterprise.Application.Common.Interfaces;
 using Enterprise.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -32,15 +32,31 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         return await _dbSet.AsNoTracking().Where(predicate).ToListAsync(cancellationToken);
     }
 
+    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.AsNoTracking().FirstOrDefaultAsync(predicate, cancellationToken);
+    }
+
     public async Task<T> AddAsync(T entity, CancellationToken cancellationToken = default)
     {
         await _dbSet.AddAsync(entity, cancellationToken);
         return entity;
     }
 
+    public async Task AddRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+    {
+        await _dbSet.AddRangeAsync(entities, cancellationToken);
+    }
+
     public Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
     {
         _dbSet.Update(entity);
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+    {
+        _dbSet.UpdateRange(entities);
         return Task.CompletedTask;
     }
 
@@ -54,11 +70,26 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         }
     }
 
+    public Task DeleteRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+    {
+        foreach (var entity in entities)
+        {
+            entity.IsDeleted = true;
+        }
+        _dbSet.UpdateRange(entities);
+        return Task.CompletedTask;
+    }
+
     public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default)
     {
         return predicate == null
             ? await _dbSet.AsNoTracking().CountAsync(cancellationToken)
             : await _dbSet.AsNoTracking().CountAsync(predicate, cancellationToken);
+    }
+
+    public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return await _dbSet.AsNoTracking().AnyAsync(predicate, cancellationToken);
     }
 
     public IQueryable<T> GetQueryable()

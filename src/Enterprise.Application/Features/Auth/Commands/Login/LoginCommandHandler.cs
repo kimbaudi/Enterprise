@@ -1,5 +1,4 @@
 using Enterprise.Application.Common.Interfaces;
-using Enterprise.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 
@@ -36,7 +35,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
     {
         // Get user from database with roles
         var user = await _userRepository.GetByUsernameWithRolesAsync(request.Username, cancellationToken);
-        
+
         if (user == null)
         {
             throw new UnauthorizedAccessException("Invalid username or password");
@@ -60,19 +59,19 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         {
             // Increment failed login attempts
             user.FailedLoginAttempts++;
-            
+
             if (user.FailedLoginAttempts >= MaxFailedAttempts)
             {
                 user.LockoutEnd = DateTime.UtcNow.AddMinutes(LockoutMinutes);
                 await _userRepository.UpdateAsync(user, cancellationToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
-                
+
                 throw new UnauthorizedAccessException($"Account locked due to too many failed login attempts. Try again in {LockoutMinutes} minutes.");
             }
-            
+
             await _userRepository.UpdateAsync(user, cancellationToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
-            
+
             throw new UnauthorizedAccessException("Invalid username or password");
         }
 
@@ -86,7 +85,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         var accessToken = _jwtTokenService.GenerateAccessToken(user);
         var refreshToken = _jwtTokenService.GenerateRefreshToken(user.Id, request.IpAddress);
         await _refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
-        
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var expiresAt = DateTime.UtcNow.AddHours(GetTokenExpirationHours());

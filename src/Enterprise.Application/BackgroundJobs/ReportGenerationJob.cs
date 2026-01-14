@@ -1,6 +1,5 @@
 using Enterprise.Application.Common.Interfaces;
 using Enterprise.Domain.Entities;
-using Enterprise.Domain.Interfaces;
 using Microsoft.Extensions.Logging;
 
 namespace Enterprise.Application.BackgroundJobs;

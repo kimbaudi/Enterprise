@@ -1,5 +1,4 @@
 using Enterprise.Application.Common.Interfaces;
-using Enterprise.Domain.Interfaces;
 using Enterprise.Infrastructure.Persistence;
 using Enterprise.Infrastructure.Repositories;
 using Enterprise.Infrastructure.Services;
@@ -13,26 +12,24 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        // Database Context
+        // Add DbContext
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
 
-        // Repositories
+        // Add Repository Pattern
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-        // Services
-        services.AddSingleton<IPasswordHasher, PasswordHasher>();
+        // Add Infrastructure Services
+        services.AddScoped<IDateTime, DateTimeService>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IEmailService, EmailService>();
-        services.AddScoped<IFileStorageService, LocalFileStorageService>();
-
-        // Current User Service - registered here but implemented in WebApi
-        // Will be registered in WebApi as: services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         return services;
     }

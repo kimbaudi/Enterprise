@@ -1,9 +1,10 @@
+using Enterprise.Application.Features.Products.Queries;
 using AutoMapper;
 using Enterprise.Application.Common.Exceptions;
 using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Products.Queries.GetProductById;
 using Enterprise.Domain.Entities;
-using Enterprise.Domain.Interfaces;
+using Enterprise.Application.Common.Interfaces;
 using FluentAssertions;
 using Moq;
 
@@ -19,7 +20,7 @@ public class GetProductByIdQueryHandlerTests
     {
         _productRepositoryMock = new Mock<IRepository<Product>>();
         _mapperMock = new Mock<IMapper>();
-        
+
         _handler = new GetProductByIdQueryHandler(
             _productRepositoryMock.Object,
             _mapperMock.Object);
@@ -76,7 +77,7 @@ public class GetProductByIdQueryHandlerTests
         result.Category.Should().Be(product.Category);
         result.Stock.Should().Be(product.Stock);
         result.SKU.Should().Be(product.SKU);
-        
+
         _productRepositoryMock.Verify(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -85,7 +86,7 @@ public class GetProductByIdQueryHandlerTests
     {
         // Arrange
         var productId = Guid.NewGuid();
-        
+
         _productRepositoryMock
             .Setup(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()))
             .ReturnsAsync((Product?)null);
@@ -98,7 +99,7 @@ public class GetProductByIdQueryHandlerTests
         // Assert
         await act.Should().ThrowAsync<NotFoundException>()
             .WithMessage($"Entity \"Product\" ({productId}) was not found.");
-        
+
         _productRepositoryMock.Verify(r => r.GetByIdAsync(productId, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

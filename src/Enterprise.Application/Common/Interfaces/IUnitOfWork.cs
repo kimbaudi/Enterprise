@@ -1,6 +1,6 @@
 using Enterprise.Domain.Common;
 
-namespace Enterprise.Domain.Interfaces;
+namespace Enterprise.Application.Common.Interfaces;
 
 public interface IUnitOfWork : IDisposable
 {

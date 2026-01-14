@@ -1,50 +1,35 @@
 using Enterprise.Domain.Entities;
-using Enterprise.Domain.Interfaces;
+using Enterprise.Application.Common.Interfaces;
 using Enterprise.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Enterprise.Infrastructure.Repositories;
 
-public class RefreshTokenRepository : IRefreshTokenRepository
+public class RefreshTokenRepository : Repository<RefreshToken>, IRefreshTokenRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public RefreshTokenRepository(ApplicationDbContext context)
+    public RefreshTokenRepository(ApplicationDbContext context) : base(context)
     {
-        _context = context;
     }
 
     public async Task<RefreshToken?> GetByTokenAsync(string token, CancellationToken cancellationToken = default)
     {
-        return await _context.RefreshTokens
+        return await _dbSet
             .Include(rt => rt.User)
             .FirstOrDefaultAsync(rt => rt.Token == token, cancellationToken);
     }
 
-    public async Task<IEnumerable<RefreshToken>> GetActiveTokensByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<RefreshToken>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        return await _context.RefreshTokens
-            .Where(rt => rt.UserId == userId && 
-                         rt.RevokedAt == null && 
+        return await _dbSet
+            .Where(rt => rt.UserId == userId &&
+                         rt.RevokedAt == null &&
                          rt.ExpiresAt > DateTime.UtcNow)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<RefreshToken> AddAsync(RefreshToken refreshToken, CancellationToken cancellationToken = default)
-    {
-        await _context.RefreshTokens.AddAsync(refreshToken, cancellationToken);
-        return refreshToken;
-    }
-
-    public Task UpdateAsync(RefreshToken refreshToken, CancellationToken cancellationToken = default)
-    {
-        _context.RefreshTokens.Update(refreshToken);
-        return Task.CompletedTask;
-    }
-
     public async Task RevokeAllUserTokensAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var tokens = await _context.RefreshTokens
+        var tokens = await _dbSet
             .Where(rt => rt.UserId == userId && rt.RevokedAt == null)
             .ToListAsync(cancellationToken);
 
@@ -52,5 +37,14 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         {
             token.RevokedAt = DateTime.UtcNow;
         }
+    }
+
+    public async Task DeleteExpiredTokensAsync(CancellationToken cancellationToken = default)
+    {
+        var expiredTokens = await _dbSet
+            .Where(rt => rt.ExpiresAt < DateTime.UtcNow)
+            .ToListAsync(cancellationToken);
+
+        await DeleteRangeAsync(expiredTokens, cancellationToken);
     }
 }

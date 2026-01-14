@@ -1,3 +1,4 @@
+using Enterprise.Application.Features.Products.Queries;
 using Enterprise.Application.Common.Behaviors;
 using FluentAssertions;
 using FluentValidation;

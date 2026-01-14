@@ -1,7 +1,7 @@
 using AutoMapper;
-using Enterprise.Application.DTOs;
+using Enterprise.Application.Features.Products.Queries;
 using Enterprise.Domain.Entities;
-using Enterprise.Domain.Interfaces;
+using Enterprise.Application.Common.Interfaces;
 using MediatR;
 
 namespace Enterprise.Application.Features.Products.Commands.CreateProduct;

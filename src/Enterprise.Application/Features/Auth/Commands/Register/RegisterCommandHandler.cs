@@ -1,7 +1,6 @@
 using Enterprise.Application.Common.Exceptions;
 using Enterprise.Application.Common.Interfaces;
 using Enterprise.Domain.Entities;
-using Enterprise.Domain.Interfaces;
 using MediatR;
 
 namespace Enterprise.Application.Features.Auth.Commands.Register;

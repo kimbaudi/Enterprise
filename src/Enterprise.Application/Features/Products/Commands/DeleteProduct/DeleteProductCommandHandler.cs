@@ -1,11 +1,11 @@
 using Enterprise.Application.Common.Exceptions;
 using Enterprise.Domain.Entities;
-using Enterprise.Domain.Interfaces;
+using Enterprise.Application.Common.Interfaces;
 using MediatR;
 
 namespace Enterprise.Application.Features.Products.Commands.DeleteProduct;
 
-public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand>
+public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand, bool>
 {
     private readonly IRepository<Product> _productRepository;
     private readonly IUnitOfWork _unitOfWork;
@@ -18,10 +18,10 @@ public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand>
         _unitOfWork = unitOfWork;
     }
 
-    public async Task Handle(DeleteProductCommand request, CancellationToken cancellationToken)
+    public async Task<bool> Handle(DeleteProductCommand request, CancellationToken cancellationToken)
     {
         var product = await _productRepository.GetByIdAsync(request.Id, cancellationToken);
-        
+
         if (product == null)
         {
             throw new NotFoundException("Product", request.Id);
@@ -29,5 +29,7 @@ public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand>
 
         await _productRepository.DeleteAsync(request.Id, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return true;
     }
 }

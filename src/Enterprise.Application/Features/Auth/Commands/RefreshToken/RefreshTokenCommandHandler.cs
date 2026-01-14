@@ -1,5 +1,4 @@
 using Enterprise.Application.Common.Interfaces;
-using Enterprise.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 
@@ -47,7 +46,7 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         }
 
         var user = await _userRepository.GetByUsernameWithRolesAsync(refreshToken.User.Username, cancellationToken);
-        
+
         if (user == null || !user.IsActive)
         {
             throw new UnauthorizedAccessException("User not found or inactive");
@@ -56,11 +55,11 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         // Revoke old refresh token
         refreshToken.RevokedAt = DateTime.UtcNow;
         refreshToken.RevokedByIp = request.IpAddress;
-        
+
         // Generate new tokens
         var newRefreshToken = _jwtTokenService.GenerateRefreshToken(user.Id, request.IpAddress);
         refreshToken.ReplacedByToken = newRefreshToken.Token;
-        
+
         await _refreshTokenRepository.UpdateAsync(refreshToken, cancellationToken);
         await _refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

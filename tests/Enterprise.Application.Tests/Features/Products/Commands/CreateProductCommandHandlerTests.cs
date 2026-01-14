@@ -1,8 +1,9 @@
+using Enterprise.Application.Features.Products.Queries;
 using AutoMapper;
 using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Products.Commands.CreateProduct;
 using Enterprise.Domain.Entities;
-using Enterprise.Domain.Interfaces;
+using Enterprise.Application.Common.Interfaces;
 using FluentAssertions;
 using Moq;
 

@@ -1,8 +1,8 @@
 using AutoMapper;
 using Enterprise.Application.Common.Exceptions;
-using Enterprise.Application.DTOs;
+using Enterprise.Application.Features.Products.Queries;
 using Enterprise.Domain.Entities;
-using Enterprise.Domain.Interfaces;
+using Enterprise.Application.Common.Interfaces;
 using MediatR;
 
 namespace Enterprise.Application.Features.Products.Commands.UpdateProduct;
@@ -26,7 +26,7 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
     public async Task<ProductDto> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
     {
         var existingProduct = await _productRepository.GetByIdAsync(request.Id, cancellationToken);
-        
+
         if (existingProduct == null)
         {
             throw new NotFoundException("Product", request.Id);

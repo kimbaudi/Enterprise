@@ -1,5 +1,4 @@
 using Enterprise.Application.Common.Interfaces;
-using Enterprise.Domain.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;

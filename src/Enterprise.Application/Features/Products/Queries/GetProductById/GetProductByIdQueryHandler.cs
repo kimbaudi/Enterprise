@@ -1,13 +1,13 @@
 using AutoMapper;
 using Enterprise.Application.Common.Exceptions;
-using Enterprise.Application.DTOs;
+using Enterprise.Application.Features.Products.Queries;
 using Enterprise.Domain.Entities;
-using Enterprise.Domain.Interfaces;
+using Enterprise.Application.Common.Interfaces;
 using MediatR;
 
 namespace Enterprise.Application.Features.Products.Queries.GetProductById;
 
-public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, ProductDto?>
+public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, ProductDto>
 {
     private readonly IRepository<Product> _productRepository;
     private readonly IMapper _mapper;
@@ -23,12 +23,12 @@ public class GetProductByIdQueryHandler : IRequestHandler<GetProductByIdQuery, P
     public async Task<ProductDto> Handle(GetProductByIdQuery request, CancellationToken cancellationToken)
     {
         var product = await _productRepository.GetByIdAsync(request.Id, cancellationToken);
-        
+
         if (product == null)
         {
             throw new NotFoundException("Product", request.Id);
         }
-        
+
         return _mapper.Map<ProductDto>(product);
     }
 }
