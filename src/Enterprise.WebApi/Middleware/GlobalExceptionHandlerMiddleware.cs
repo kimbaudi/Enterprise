@@ -1,9 +1,9 @@
+using Enterprise.Application.Common.Exceptions;
+using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using Enterprise.Application.Common.Exceptions;
-using Microsoft.EntityFrameworkCore;
 
 namespace Enterprise.WebApi.Middleware;
 

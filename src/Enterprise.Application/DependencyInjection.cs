@@ -1,10 +1,10 @@
+using Enterprise.Application.Common.Behaviors;
+using Enterprise.Application.Common.Interfaces;
+using Enterprise.Application.Mappings;
+using Enterprise.Application.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
-using Enterprise.Application.Common.Behaviors;
-using Enterprise.Application.Mappings;
-using Enterprise.Application.Common.Interfaces;
-using Enterprise.Application.Services;
 
 namespace Enterprise.Application;
 

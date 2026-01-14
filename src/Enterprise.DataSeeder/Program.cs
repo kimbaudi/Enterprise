@@ -1,7 +1,6 @@
-using System.CommandLine;
 using Enterprise.Application;
-using Enterprise.Infrastructure;
 using Enterprise.DataSeeder.Data;
+using Enterprise.Infrastructure;
 using Enterprise.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -9,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using System.CommandLine;
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()

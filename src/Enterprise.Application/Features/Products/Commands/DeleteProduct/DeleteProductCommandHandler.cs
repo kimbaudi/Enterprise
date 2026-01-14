@@ -1,6 +1,6 @@
 using Enterprise.Application.Common.Exceptions;
-using Enterprise.Domain.Entities;
 using Enterprise.Application.Common.Interfaces;
+using Enterprise.Domain.Entities;
 using MediatR;
 
 namespace Enterprise.Application.Features.Products.Commands.DeleteProduct;

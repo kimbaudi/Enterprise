@@ -1,8 +1,8 @@
 using AutoMapper;
+using Enterprise.Application.Common.Interfaces;
 using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Products.Commands.CreateProduct;
 using Enterprise.Domain.Entities;
-using Enterprise.Application.Common.Interfaces;
 using FluentAssertions;
 using Moq;
 

@@ -1,8 +1,8 @@
 using AutoMapper;
 using Enterprise.Application.Common.Extensions;
+using Enterprise.Application.Common.Interfaces;
 using Enterprise.Application.DTOs;
 using Enterprise.Domain.Entities;
-using Enterprise.Application.Common.Interfaces;
 using MediatR;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
