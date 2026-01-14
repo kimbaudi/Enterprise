@@ -4,7 +4,6 @@ using Enterprise.Application.Common.Models;
 using Enterprise.Application.DTOs;
 using Enterprise.Domain.Entities;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Enterprise.Application.Features.Products.Queries.GetProductsByCategory;
 
@@ -21,16 +20,12 @@ public class GetProductsByCategoryQueryHandler : IRequestHandler<GetProductsByCa
 
     public async Task<PaginatedResult<ProductDto>> Handle(GetProductsByCategoryQuery request, CancellationToken cancellationToken)
     {
-        var query = _productRepository.GetQueryable()
-            .Where(p => !p.IsDeleted && p.Category == request.Category);
-
-        var totalCount = await query.CountAsync(cancellationToken);
-
-        var products = await query
-            .OrderBy(p => p.Name)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .ToListAsync(cancellationToken);
+        var (products, totalCount) = await _productRepository.GetPagedAsync(
+            p => !p.IsDeleted && p.Category == request.Category,
+            request.PageNumber,
+            request.PageSize,
+            p => p.Name,
+            cancellationToken);
 
         var productDtos = _mapper.Map<List<ProductDto>>(products);
 

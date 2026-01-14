@@ -17,5 +17,11 @@ public interface IRepository<T> where T : BaseEntity
     Task DeleteRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default);
     Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken cancellationToken = default);
     Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
+    Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+        Expression<Func<T, bool>> predicate,
+        int pageNumber,
+        int pageSize,
+        Expression<Func<T, object>>? orderBy = null,
+        CancellationToken cancellationToken = default);
     IQueryable<T> GetQueryable();
 }

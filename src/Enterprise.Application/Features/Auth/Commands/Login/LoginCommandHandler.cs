@@ -1,12 +1,10 @@
 using Enterprise.Application.Common.Interfaces;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 
 namespace Enterprise.Application.Features.Auth.Commands.Login;
 
 public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
 {
-    private readonly IConfiguration _configuration;
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IPasswordHasher _passwordHasher;
@@ -16,14 +14,12 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
     private const int LockoutMinutes = 30;
 
     public LoginCommandHandler(
-        IConfiguration configuration,
         IUserRepository userRepository,
         IRefreshTokenRepository refreshTokenRepository,
         IPasswordHasher passwordHasher,
         IJwtTokenService jwtTokenService,
         IUnitOfWork unitOfWork)
     {
-        _configuration = configuration;
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _passwordHasher = passwordHasher;
@@ -88,29 +84,17 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var expiresAt = DateTime.UtcNow.AddHours(GetTokenExpirationHours());
-
         return new LoginResponse
         {
             Token = accessToken,
             RefreshToken = refreshToken.Token,
             TokenType = "Bearer",
-            ExpiresAt = expiresAt,
+            ExpiresAt = _jwtTokenService.GetTokenExpirationTime(),
             Username = user.Username,
             Email = user.Email,
             FirstName = user.FirstName,
             LastName = user.LastName,
             Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList()
         };
-    }
-
-    private int GetTokenExpirationHours()
-    {
-        var expirationHours = _configuration.GetSection("JwtSettings")["ExpirationHours"];
-        if (int.TryParse(expirationHours, out var hours))
-        {
-            return hours;
-        }
-        return 24; // Default to 24 hours
     }
 }

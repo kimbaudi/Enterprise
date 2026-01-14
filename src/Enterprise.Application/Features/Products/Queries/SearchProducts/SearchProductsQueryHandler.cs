@@ -21,6 +21,8 @@ public class SearchProductsQueryHandler : IRequestHandler<SearchProductsQuery, P
 
     public async Task<PaginatedResult<ProductDto>> Handle(SearchProductsQuery request, CancellationToken cancellationToken)
     {
+        // For complex queries with dynamic filters, using GetQueryable is acceptable
+        // as it maintains query translation to SQL rather than in-memory evaluation
         var query = _productRepository.GetQueryable()
             .Where(p => !p.IsDeleted);
 

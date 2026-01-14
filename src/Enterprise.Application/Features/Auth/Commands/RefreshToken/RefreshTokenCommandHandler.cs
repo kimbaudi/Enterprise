@@ -1,6 +1,5 @@
 using Enterprise.Application.Common.Interfaces;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 
 namespace Enterprise.Application.Features.Auth.Commands.RefreshToken;
 
@@ -20,20 +19,17 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
     private readonly IUserRepository _userRepository;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IConfiguration _configuration;
 
     public RefreshTokenCommandHandler(
         IRefreshTokenRepository refreshTokenRepository,
         IUserRepository userRepository,
         IJwtTokenService jwtTokenService,
-        IUnitOfWork unitOfWork,
-        IConfiguration configuration)
+        IUnitOfWork unitOfWork)
     {
         _refreshTokenRepository = refreshTokenRepository;
         _userRepository = userRepository;
         _jwtTokenService = jwtTokenService;
         _unitOfWork = unitOfWork;
-        _configuration = configuration;
     }
 
     public async Task<RefreshTokenResponse> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
@@ -65,24 +61,13 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, R
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         var accessToken = _jwtTokenService.GenerateAccessToken(user);
-        var expiresAt = DateTime.UtcNow.AddHours(GetTokenExpirationHours());
 
         return new RefreshTokenResponse
         {
             Token = accessToken,
             RefreshToken = newRefreshToken.Token,
             TokenType = "Bearer",
-            ExpiresAt = expiresAt
+            ExpiresAt = _jwtTokenService.GetTokenExpirationTime()
         };
-    }
-
-    private int GetTokenExpirationHours()
-    {
-        var expirationHours = _configuration.GetSection("JwtSettings")["ExpirationHours"];
-        if (int.TryParse(expirationHours, out var hours))
-        {
-            return hours;
-        }
-        return 24;
     }
 }

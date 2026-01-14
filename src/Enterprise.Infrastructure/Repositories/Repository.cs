@@ -92,6 +92,30 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         return await _dbSet.AsNoTracking().AnyAsync(predicate, cancellationToken);
     }
 
+    public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
+        Expression<Func<T, bool>> predicate,
+        int pageNumber,
+        int pageSize,
+        Expression<Func<T, object>>? orderBy = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbSet.AsNoTracking().Where(predicate);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        if (orderBy != null)
+        {
+            query = query.OrderBy(orderBy);
+        }
+
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+
     public IQueryable<T> GetQueryable()
     {
         return _dbSet.AsNoTracking();

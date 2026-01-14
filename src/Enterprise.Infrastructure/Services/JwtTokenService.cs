@@ -75,6 +75,11 @@ public class JwtTokenService : IJwtTokenService
         return Convert.ToBase64String(randomNumber);
     }
 
+    public DateTime GetTokenExpirationTime()
+    {
+        return DateTime.UtcNow.AddHours(GetTokenExpirationHours());
+    }
+
     private int GetTokenExpirationHours()
     {
         var expirationHours = _configuration.GetSection("JwtSettings")["ExpirationHours"];
