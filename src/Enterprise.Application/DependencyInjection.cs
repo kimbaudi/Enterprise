@@ -17,9 +17,10 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuditLoggingBehavior<,>));
 
         // AutoMapper
-        services.AddAutoMapper(config => 
+        services.AddAutoMapper(config =>
         {
             config.AddProfile<MappingProfile>();
         }, typeof(MappingProfile).Assembly);

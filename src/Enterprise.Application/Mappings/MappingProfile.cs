@@ -1,4 +1,5 @@
 using AutoMapper;
+using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Products.Commands.CreateProduct;
 using Enterprise.Application.Features.Products.Commands.UpdateProduct;
 using Enterprise.Application.Features.Products.Queries;
@@ -39,5 +40,8 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
             .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+
+        // AuditLog mappings
+        CreateMap<AuditLog, AuditLogDto>();
     }
 }

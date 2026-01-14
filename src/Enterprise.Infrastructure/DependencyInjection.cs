@@ -1,4 +1,5 @@
 using Enterprise.Application.Common.Interfaces;
+using Enterprise.Domain.Interfaces;
 using Enterprise.Infrastructure.Persistence;
 using Enterprise.Infrastructure.Repositories;
 using Enterprise.Infrastructure.Services;
@@ -20,8 +21,9 @@ public static class DependencyInjection
 
         // Add Repository Pattern
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-        services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<Application.Common.Interfaces.IUserRepository, UserRepository>();
+        services.AddScoped<Application.Common.Interfaces.IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Infrastructure Services
