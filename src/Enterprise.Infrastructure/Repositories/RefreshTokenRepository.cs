@@ -27,6 +27,36 @@ public class RefreshTokenRepository : Repository<RefreshToken>, IRefreshTokenRep
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IEnumerable<RefreshToken>> GetActiveTokensForUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        return await _dbSet
+            .Where(rt => rt.UserId == userId &&
+                         rt.RevokedAt == null &&
+                         rt.ExpiresAt > now)
+            .OrderByDescending(rt => rt.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IEnumerable<RefreshToken>> GetExpiredTokensAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        return await _dbSet
+            .Where(rt => rt.ExpiresAt < now)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task RevokeTokenAsync(string token, CancellationToken cancellationToken = default)
+    {
+        var refreshToken = await _dbSet
+            .FirstOrDefaultAsync(rt => rt.Token == token, cancellationToken);
+
+        if (refreshToken != null && refreshToken.RevokedAt == null)
+        {
+            refreshToken.RevokedAt = DateTime.UtcNow;
+        }
+    }
+
     public async Task RevokeAllUserTokensAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var tokens = await _dbSet
@@ -46,5 +76,41 @@ public class RefreshTokenRepository : Repository<RefreshToken>, IRefreshTokenRep
             .ToListAsync(cancellationToken);
 
         await DeleteRangeAsync(expiredTokens, cancellationToken);
+    }
+
+    public async Task DeleteRevokedTokensAsync(CancellationToken cancellationToken = default)
+    {
+        var revokedTokens = await _dbSet
+            .Where(rt => rt.RevokedAt != null)
+            .ToListAsync(cancellationToken);
+
+        await DeleteRangeAsync(revokedTokens, cancellationToken);
+    }
+
+    public async Task DeleteOlderThanAsync(DateTime cutoffDate, CancellationToken cancellationToken = default)
+    {
+        var oldTokens = await _dbSet
+            .Where(rt => rt.CreatedAt < cutoffDate)
+            .ToListAsync(cancellationToken);
+
+        await DeleteRangeAsync(oldTokens, cancellationToken);
+    }
+
+    public async Task<int> CountActiveTokensByUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        return await _dbSet
+            .Where(rt => rt.UserId == userId &&
+                         rt.RevokedAt == null &&
+                         rt.ExpiresAt > now)
+            .CountAsync(cancellationToken);
+    }
+
+    public async Task<int> CountTotalActiveTokensAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTime.UtcNow;
+        return await _dbSet
+            .Where(rt => rt.RevokedAt == null && rt.ExpiresAt > now)
+            .CountAsync(cancellationToken);
     }
 }

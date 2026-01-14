@@ -89,4 +89,133 @@ public class JwtTokenService : IJwtTokenService
         }
         return 24; // Default to 24 hours
     }
+
+    public bool ValidateToken(string token)
+    {
+        try
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456";
+            var key = Encoding.UTF8.GetBytes(secretKey);
+
+            tokenHandler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidIssuer = jwtSettings["Issuer"] ?? "Enterprise",
+                ValidateAudience = true,
+                ValidAudience = jwtSettings["Audience"] ?? "EnterpriseUsers",
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero
+            }, out _);
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public bool IsTokenExpired(string token)
+    {
+        try
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var jwtToken = tokenHandler.ReadJwtToken(token);
+            return jwtToken.ValidTo < DateTime.UtcNow;
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    public ClaimsPrincipal? GetPrincipalFromToken(string token)
+    {
+        try
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyForJWTTokenGeneration123456";
+            var key = Encoding.UTF8.GetBytes(secretKey);
+
+            var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidIssuer = jwtSettings["Issuer"] ?? "Enterprise",
+                ValidateAudience = true,
+                ValidAudience = jwtSettings["Audience"] ?? "EnterpriseUsers",
+                ValidateLifetime = false, // Don't validate lifetime for expired tokens
+                ClockSkew = TimeSpan.Zero
+            }, out _);
+
+            return principal;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public Guid? GetUserIdFromToken(string token)
+    {
+        var principal = GetPrincipalFromToken(token);
+        var userIdClaim = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (Guid.TryParse(userIdClaim, out var userId))
+            return userId;
+
+        return null;
+    }
+
+    public string? GetUsernameFromToken(string token)
+    {
+        var principal = GetPrincipalFromToken(token);
+        return principal?.FindFirst(ClaimTypes.Name)?.Value;
+    }
+
+    public IEnumerable<string> GetRolesFromToken(string token)
+    {
+        var principal = GetPrincipalFromToken(token);
+        if (principal == null)
+            return Enumerable.Empty<string>();
+
+        return principal.FindAll(ClaimTypes.Role).Select(c => c.Value);
+    }
+
+    public IEnumerable<Claim> GetClaimsFromToken(string token)
+    {
+        var principal = GetPrincipalFromToken(token);
+        return principal?.Claims ?? Enumerable.Empty<Claim>();
+    }
+
+    public DateTime? GetTokenExpirationDate(string token)
+    {
+        try
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var jwtToken = tokenHandler.ReadJwtToken(token);
+            return jwtToken.ValidTo;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public TimeSpan GetRemainingTokenLifetime(string token)
+    {
+        var expirationDate = GetTokenExpirationDate(token);
+        if (expirationDate.HasValue)
+        {
+            var remaining = expirationDate.Value - DateTime.UtcNow;
+            return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+        }
+        return TimeSpan.Zero;
+    }
 }
