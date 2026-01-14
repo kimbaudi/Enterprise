@@ -1,11 +1,12 @@
 using Asp.Versioning;
+using Enterprise.Application.Common.Models;
 using Enterprise.Application.Features.Auth.Commands.ForgotPassword;
 using Enterprise.Application.Features.Auth.Commands.Login;
 using Enterprise.Application.Features.Auth.Commands.RefreshToken;
 using Enterprise.Application.Features.Auth.Commands.Register;
 using Enterprise.Application.Features.Auth.Commands.ResetPassword;
+using Enterprise.Application.Features.Auth.Commands.RevokeToken;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -14,16 +15,14 @@ namespace Enterprise.WebApi.Controllers;
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
-[EnableRateLimiting("auth")]
+[EnableRateLimiting("auth")] // Apply auth rate limit policy to entire controller
 public class AuthController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IMediator mediator, ILogger<AuthController> logger)
+    public AuthController(IMediator mediator)
     {
         _mediator = mediator;
-        _logger = logger;
     }
 
     /// <summary>
@@ -32,27 +31,14 @@ public class AuthController : ControllerBase
     /// <param name="request">Registration details</param>
     /// <returns>Registration confirmation</returns>
     [HttpPost("register")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(RegisterResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<RegisterResponse>> Register([FromBody] RegisterRequest request)
+    [DisableRateLimiting] // Override: Allow more registrations
+    [EnableRateLimiting("api")]
+    public async Task<ActionResult<ApiResponse<AuthResult>>> Register(
+        [FromBody] RegisterCommand command,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Registration attempt for username: {Username}", request.Username);
-
-        var ipAddress = GetClientIpAddress();
-        var command = new RegisterCommand(
-            request.Username,
-            request.Email,
-            request.Password,
-            request.ConfirmPassword,
-            request.FirstName,
-            request.LastName,
-            ipAddress);
-
-        var response = await _mediator.Send(command);
-
-        _logger.LogInformation("Registration successful for username: {Username}", request.Username);
-        return CreatedAtAction(nameof(Register), new { id = response.Id }, response);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<AuthResult>(result));
     }
 
     /// <summary>
@@ -61,20 +47,12 @@ public class AuthController : ControllerBase
     /// <param name="request">Login credentials</param>
     /// <returns>JWT token with expiration information</returns>
     [HttpPost("login")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
+    public async Task<ActionResult<ApiResponse<AuthResult>>> Login(
+        [FromBody] LoginCommand command,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Login attempt for username: {Username}", request.Username);
-
-        var ipAddress = GetClientIpAddress();
-        var command = new LoginCommand(request.Username, request.Password, ipAddress);
-        var response = await _mediator.Send(command);
-
-        _logger.LogInformation("Login successful for username: {Username}", request.Username);
-        return Ok(response);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<AuthResult>(result));
     }
 
     /// <summary>
@@ -82,91 +60,48 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <param name="request">Refresh token</param>
     /// <returns>New access token and refresh token</returns>
-    [HttpPost("refresh")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<RefreshTokenResponse>> RefreshToken([FromBody] RefreshTokenRequest request)
+    [HttpPost("refresh-token")]
+    public async Task<ActionResult<ApiResponse<AuthResult>>> RefreshToken(
+        [FromBody] RefreshTokenCommand command,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Token refresh attempt");
-
-        var ipAddress = GetClientIpAddress();
-        var command = new RefreshTokenCommand(request.RefreshToken, ipAddress);
-        var response = await _mediator.Send(command);
-
-        _logger.LogInformation("Token refresh successful");
-        return Ok(response);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<AuthResult>(result));
     }
 
-    private string GetClientIpAddress()
+    [HttpPost("revoke-token")]
+    public async Task<ActionResult<ApiResponse<bool>>> RevokeToken(
+        [FromBody] RevokeTokenCommand command,
+        CancellationToken cancellationToken)
     {
-        var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(forwardedFor))
-        {
-            return forwardedFor.Split(',')[0].Trim();
-        }
-
-        var realIp = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(realIp))
-        {
-            return realIp;
-        }
-
-        return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-    }
-
-    /// <summary>
-    /// Test endpoint to verify authentication is working
-    /// </summary>
-    /// <returns>User information from JWT token</returns>
-    [HttpGet("me")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public ActionResult<object> GetCurrentUser()
-    {
-        var username = User.Identity?.Name;
-        var claims = User.Claims.Select(c => new { c.Type, c.Value });
-
-        return Ok(new
-        {
-            Username = username,
-            IsAuthenticated = User.Identity?.IsAuthenticated ?? false,
-            Claims = claims
-        });
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<bool>(result));
     }
 
     /// <summary>
     /// Request a password reset token
     /// </summary>
     [HttpPost("forgot-password")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(ForgotPasswordResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<ForgotPasswordResponse>> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    [EnableRateLimiting("expensive")] // Very strict: 10 per 5 minutes
+    public async Task<ActionResult<ApiResponse<string>>> ForgotPassword(
+        [FromBody] ForgotPasswordCommand command,
+        CancellationToken cancellationToken)
     {
-        var command = new ForgotPasswordCommand(request.Email);
-        var response = await _mediator.Send(command);
-        return Ok(response);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<string>(result));
     }
 
     /// <summary>
     /// Reset password using token
     /// </summary>
     [HttpPost("reset-password")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(ResetPasswordResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<ResetPasswordResponse>> ResetPassword([FromBody] ResetPasswordRequest request)
+    [EnableRateLimiting("expensive")]
+    public async Task<ActionResult<ApiResponse<string>>> ResetPassword(
+        [FromBody] ResetPasswordCommand command,
+        CancellationToken cancellationToken)
     {
-        var command = new ResetPasswordCommand(
-            request.Email,
-            request.Token,
-            request.NewPassword,
-            request.ConfirmPassword);
-
-        var response = await _mediator.Send(command);
-        return Ok(response);
+        var result = await _mediator.Send(command, cancellationToken);
+        return Ok(new ApiResponse<string>(result));
     }
 }
 

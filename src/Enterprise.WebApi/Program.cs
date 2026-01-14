@@ -212,6 +212,40 @@ try
             options.QueueLimit = 0;
         });
 
+        // Per-user rate limiting (for authenticated requests)
+        options.AddPolicy("perUser", httpContext =>
+        {
+            var username = httpContext.User.Identity?.Name ?? "anonymous";
+
+            return RateLimitPartition.GetTokenBucketLimiter(username, _ => new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 100,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 5,
+                ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                TokensPerPeriod = 50,
+                AutoReplenishment = true
+            });
+        });
+
+        // Sliding window for smoother rate limiting
+        options.AddSlidingWindowLimiter("smooth", options =>
+        {
+            options.PermitLimit = 100;
+            options.Window = TimeSpan.FromMinutes(1);
+            options.SegmentsPerWindow = 6; // 10-second segments
+            options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            options.QueueLimit = 10;
+        });
+
+        // Concurrency limiter (max simultaneous requests)
+        options.AddConcurrencyLimiter("concurrent", options =>
+        {
+            options.PermitLimit = 50; // Max 50 concurrent requests
+            options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            options.QueueLimit = 100;
+        });
+
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     });
 
@@ -316,6 +350,7 @@ try
 
     // Add Rate Limiting Middleware (must be after routing, before auth)
     app.UseRateLimiter();
+    app.UseMiddleware<RateLimitMiddleware>(); // Custom response formatting
 
     app.UseAuthentication();
     app.UseAuthorization();
