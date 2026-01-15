@@ -31,6 +31,9 @@ public class UsersController : ControllerBase
     /// <summary>
     /// Create a new user
     /// </summary>
+    /// <param name="command">User creation command</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Created user details</returns>
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting("expensive")]
@@ -47,6 +50,10 @@ public class UsersController : ControllerBase
     /// <summary>
     /// Update an existing user
     /// </summary>
+    /// <param name="id">User ID</param>
+    /// <param name="command">User update command</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Updated user details</returns>
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
@@ -69,6 +76,12 @@ public class UsersController : ControllerBase
     /// <summary>
     /// Get paginated list of users
     /// </summary>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 10)</param>
+    /// <param name="searchTerm">Optional search term</param>
+    /// <param name="isActive">Optional filter by active status</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated list of users</returns>
     [HttpGet]
     [Authorize(Roles = "Admin")]
     [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "users-list")]
@@ -88,6 +101,9 @@ public class UsersController : ControllerBase
     /// <summary>
     /// Get user by ID
     /// </summary>
+    /// <param name="id">User ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>User details</returns>
     [HttpGet("{id}")]
     [Authorize(Roles = "Admin")]
     [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "user-details")]
@@ -103,6 +119,9 @@ public class UsersController : ControllerBase
     /// <summary>
     /// Delete a user (soft delete)
     /// </summary>
+    /// <param name="id">User ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success status</returns>
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]

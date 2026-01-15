@@ -35,7 +35,8 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Register a new user account
     /// </summary>
-    /// <param name="request">Registration details</param>
+    /// <param name="command">Registration details</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Registration confirmation</returns>
     [HttpPost("register")]
     [DisableRateLimiting] // Override: Allow more registrations
@@ -51,7 +52,8 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Authenticate user and generate JWT token
     /// </summary>
-    /// <param name="request">Login credentials</param>
+    /// <param name="command">Login credentials</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>JWT token with expiration information</returns>
     [HttpPost("login")]
     public async Task<ActionResult<ApiResponse<LoginResponse>>> Login(
@@ -65,7 +67,8 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Refresh access token using refresh token
     /// </summary>
-    /// <param name="request">Refresh token</param>
+    /// <param name="command">Refresh token</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>New access token and refresh token</returns>
     [HttpPost("refresh-token")]
     public async Task<ActionResult<ApiResponse<RefreshTokenResponse>>> RefreshToken(
@@ -79,6 +82,9 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Request a password reset token
     /// </summary>
+    /// <param name="command">Password reset request</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Password reset confirmation</returns>
     [HttpPost("forgot-password")]
     [EnableRateLimiting("expensive")] // Very strict: 10 per 5 minutes
     public async Task<ActionResult<ApiResponse<ForgotPasswordResponse>>> ForgotPassword(
@@ -92,6 +98,9 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Reset password using token
     /// </summary>
+    /// <param name="command">Password reset command</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Password reset confirmation</returns>
     [HttpPost("reset-password")]
     [EnableRateLimiting("expensive")]
     public async Task<ActionResult<ApiResponse<ResetPasswordResponse>>> ResetPassword(
@@ -105,6 +114,8 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Enable two-factor authentication for the current user
     /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>2FA setup response with QR code</returns>
     [HttpPost("2fa/enable")]
     [Authorize]
     public async Task<ActionResult<ApiResponse<Enable2FAResponse>>> Enable2FA(CancellationToken cancellationToken)
@@ -118,6 +129,9 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Verify two-factor authentication setup by validating the code
     /// </summary>
+    /// <param name="request">Verification request with code</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Verification result</returns>
     [HttpPost("2fa/verify")]
     [Authorize]
     public async Task<ActionResult<ApiResponse<Verify2FAResponse>>> Verify2FA(
@@ -133,6 +147,9 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Validate two-factor authentication code during login
     /// </summary>
+    /// <param name="request">Validation request with user ID and code</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Validation result with token</returns>
     [HttpPost("2fa/validate")]
     public async Task<ActionResult<ApiResponse<Validate2FAResponse>>> Validate2FA(
         [FromBody] Validate2FARequest request,
@@ -146,6 +163,9 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Disable two-factor authentication for the current user
     /// </summary>
+    /// <param name="request">Disable request with code</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success status</returns>
     [HttpPost("2fa/disable")]
     [Authorize]
     public async Task<ActionResult<ApiResponse<bool>>> Disable2FA(
@@ -161,6 +181,8 @@ public class AuthController : ControllerBase
     /// <summary>
     /// Get two-factor authentication status for the current user
     /// </summary>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>2FA status information</returns>
     [HttpGet("2fa/status")]
     [Authorize]
     public async Task<ActionResult<ApiResponse<TwoFactorStatusResponse>>> Get2FAStatus(CancellationToken cancellationToken)

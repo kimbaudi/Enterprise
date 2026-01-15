@@ -39,6 +39,12 @@ public class ProductsController : ControllerBase
     /// <summary>
     /// Get all products with pagination
     /// </summary>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 10)</param>
+    /// <param name="searchTerm">Optional search term</param>
+    /// <param name="sortBy">Optional sort field</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated list of products</returns>
     [HttpGet]
     [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "products-list")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
@@ -57,6 +63,12 @@ public class ProductsController : ControllerBase
     /// <summary>
     /// Stream products with pagination (memory-efficient for large datasets)
     /// </summary>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 10)</param>
+    /// <param name="searchTerm">Optional search term</param>
+    /// <param name="sortBy">Optional sort field</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Async stream of products</returns>
     [HttpGet("stream")]
     [FeatureGate("StreamingResponses")]
     [ProducesResponseType(typeof(IAsyncEnumerable<ProductDto>), StatusCodes.Status200OK)]
@@ -77,6 +89,9 @@ public class ProductsController : ControllerBase
     /// <summary>
     /// Get product by ID
     /// </summary>
+    /// <param name="id">Product ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Product details</returns>
     [HttpGet("{id}")]
     [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "product-details")]
     [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status200OK)]
@@ -91,6 +106,11 @@ public class ProductsController : ControllerBase
     /// <summary>
     /// Get products by category
     /// </summary>
+    /// <param name="category">Category name</param>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 10)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated list of products in category</returns>
     [HttpGet("category/{category}")]
     [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "products-category")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
@@ -108,6 +128,14 @@ public class ProductsController : ControllerBase
     /// <summary>
     /// Search products with filters
     /// </summary>
+    /// <param name="searchTerm">Search term</param>
+    /// <param name="minPrice">Optional minimum price filter</param>
+    /// <param name="maxPrice">Optional maximum price filter</param>
+    /// <param name="category">Optional category filter</param>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 10)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated search results</returns>
     [HttpGet("search")]
     [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "products-search")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
@@ -128,6 +156,9 @@ public class ProductsController : ControllerBase
     /// <summary>
     /// Create a new product
     /// </summary>
+    /// <param name="command">Product creation command</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Created product details</returns>
     [HttpPost]
     [Authorize(Roles = "Admin,Manager")]
     [EnableRateLimiting("expensive")]
@@ -144,6 +175,10 @@ public class ProductsController : ControllerBase
     /// <summary>
     /// Update an existing product
     /// </summary>
+    /// <param name="id">Product ID</param>
+    /// <param name="command">Product update command</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Updated product details</returns>
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin,Manager")]
     [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status200OK)]
@@ -166,6 +201,9 @@ public class ProductsController : ControllerBase
     /// <summary>
     /// Delete a product
     /// </summary>
+    /// <param name="id">Product ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success status</returns>
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting("expensive")]
@@ -181,6 +219,10 @@ public class ProductsController : ControllerBase
     /// <summary>
     /// Get all deleted products with pagination (Admin only)
     /// </summary>
+    /// <param name="pageNumber">Page number (default: 1)</param>
+    /// <param name="pageSize">Page size (default: 10)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Paginated list of deleted products</returns>
     [HttpGet("deleted")]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
@@ -197,6 +239,9 @@ public class ProductsController : ControllerBase
     /// <summary>
     /// Restore a soft-deleted product (Admin only)
     /// </summary>
+    /// <param name="id">Product ID</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Success status</returns>
     [HttpPost("{id}/restore")]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting("expensive")]
@@ -212,6 +257,10 @@ public class ProductsController : ControllerBase
     /// <summary>
     /// Upload product image
     /// </summary>
+    /// <param name="id">Product ID</param>
+    /// <param name="file">Image file (max 5MB)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Upload result with image URL</returns>
     [HttpPost("{id}/image")]
     [Authorize(Roles = "Admin,Manager")]
     [EnableRateLimiting("expensive")]
