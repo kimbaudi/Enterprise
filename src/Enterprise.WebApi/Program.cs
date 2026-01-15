@@ -136,13 +136,21 @@ try
         {
             Title = "Enterprise Web API",
             Version = "v1",
-            Description = "An enterprise-ready ASP.NET Core Web API with clean architecture",
+            Description = "An enterprise-ready ASP.NET Core Web API with clean architecture, CQRS pattern, Redis caching, output caching, and compression",
             Contact = new OpenApiContact
             {
                 Name = "Your Company",
                 Email = "contact@yourcompany.com"
             }
         });
+
+        // Include XML documentation
+        var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+        if (File.Exists(xmlPath))
+        {
+            options.IncludeXmlComments(xmlPath);
+        }
 
         // Add JWT authentication to Swagger
         options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme

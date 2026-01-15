@@ -96,6 +96,16 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.SKU)
                 .IsUnique();
 
+            // Performance indexes for common query patterns
+            entity.HasIndex(e => e.Category);
+
+            entity.HasIndex(e => e.IsDeleted);
+
+            entity.HasIndex(e => e.Name);
+
+            // Composite index for filtering by IsDeleted and Category together
+            entity.HasIndex(e => new { e.IsDeleted, e.Category });
+
             entity.Property(e => e.CreatedAt)
                 .IsRequired();
 
@@ -133,6 +143,9 @@ public class ApplicationDbContext : DbContext
 
             entity.HasIndex(e => e.Email)
                 .IsUnique();
+
+            // Performance index for filtering active users
+            entity.HasIndex(e => e.IsActive);
 
             entity.Property(e => e.IsDeleted)
                 .HasDefaultValue(false);
