@@ -4,7 +4,6 @@ using Enterprise.Application.Common.Models;
 using Enterprise.Application.DTOs;
 using Enterprise.Domain.Entities;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace Enterprise.Application.Features.Products.Queries.SearchProducts;
 
