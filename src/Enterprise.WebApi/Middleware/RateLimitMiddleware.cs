@@ -19,7 +19,7 @@ public class RateLimitMiddleware
         {
             context.Response.ContentType = "application/json";
             
-            var retryAfter = context.Response.Headers["Retry-After"].ToString();
+            var retryAfter = context.Response.Headers.RetryAfter.ToString();
             var response = new
             {
                 StatusCode = 429,

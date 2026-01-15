@@ -20,7 +20,7 @@ public class GlobalExceptionHandlerMiddleware
     private const int MaxRequestBodyLogSize = 4096; // 4KB limit for request body logging
 
     public GlobalExceptionHandlerMiddleware(
-        RequestDelegate next, 
+        RequestDelegate next,
         ILogger<GlobalExceptionHandlerMiddleware> logger,
         IWebHostEnvironment environment)
     {
@@ -34,7 +34,7 @@ public class GlobalExceptionHandlerMiddleware
         // Generate or retrieve correlation ID for distributed tracing
         var correlationId = GetOrCreateCorrelationId(context);
         var stopwatch = Stopwatch.StartNew();
-        
+
         try
         {
             await _next(context);
@@ -42,7 +42,7 @@ public class GlobalExceptionHandlerMiddleware
         catch (Exception ex)
         {
             stopwatch.Stop();
-            
+
             // Don't handle if response has already started
             if (context.Response.HasStarted)
             {
@@ -58,8 +58,8 @@ public class GlobalExceptionHandlerMiddleware
     }
 
     private async Task HandleExceptionAsync(
-        HttpContext context, 
-        Exception exception, 
+        HttpContext context,
+        Exception exception,
         string correlationId,
         long elapsedMilliseconds)
     {
@@ -94,9 +94,9 @@ public class GlobalExceptionHandlerMiddleware
             problemDetails.ClientIp = GetClientIpAddress(context);
             problemDetails.RequestSize = context.Request.ContentLength;
             problemDetails.ElapsedMilliseconds = elapsedMilliseconds;
-            
+
             // Log request body for POST/PUT/PATCH in development
-            if (context.Request.ContentLength.HasValue && 
+            if (context.Request.ContentLength.HasValue &&
                 context.Request.ContentLength > 0 &&
                 (context.Request.Method == "POST" || context.Request.Method == "PUT" || context.Request.Method == "PATCH"))
             {
@@ -110,13 +110,13 @@ public class GlobalExceptionHandlerMiddleware
         context.Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
         context.Response.Headers.Pragma = "no-cache";
         context.Response.Headers.Expires = "0";
-        
+
         // Add Retry-After header for transient errors
         if (isTransient)
         {
-            context.Response.Headers["Retry-After"] = "5"; // Suggest retry after 5 seconds
+            context.Response.Headers.RetryAfter = "5"; // Suggest retry after 5 seconds
         }
-        
+
         context.Response.ContentType = DetermineContentType(context);
         context.Response.StatusCode = (int)statusCode;
 
@@ -125,7 +125,7 @@ public class GlobalExceptionHandlerMiddleware
     }
 
     private (HttpStatusCode StatusCode, string Title, string ErrorCode, object? Errors, bool IsTransient) GetErrorDetails(
-        Exception exception, 
+        Exception exception,
         string traceId,
         string correlationId,
         HttpContext context)
@@ -162,7 +162,7 @@ public class GlobalExceptionHandlerMiddleware
                 false,
                 () => _logger.LogWarning(unauthorizedEx,
                     "Unauthorized access attempt. TraceId: {TraceId}, CorrelationId: {CorrelationId}, Path: {Path}, Method: {Method}, User: {User}, IP: {IP}",
-                    traceId, correlationId, context.Request.Path, context.Request.Method, 
+                    traceId, correlationId, context.Request.Path, context.Request.Method,
                     context.User?.Identity?.Name ?? "Anonymous", GetClientIpAddress(context))
             ),
 
@@ -294,7 +294,7 @@ public class GlobalExceptionHandlerMiddleware
     }
 
     private (HttpStatusCode, string, string, object?, bool) HandleUnexpectedException(
-        Exception exception, 
+        Exception exception,
         string traceId,
         string correlationId,
         HttpContext context)
@@ -331,7 +331,7 @@ public class GlobalExceptionHandlerMiddleware
     private string GetOrCreateCorrelationId(HttpContext context)
     {
         // Check if correlation ID exists in request headers
-        if (context.Request.Headers.TryGetValue("X-Correlation-Id", out var correlationId) 
+        if (context.Request.Headers.TryGetValue("X-Correlation-Id", out var correlationId)
             && !string.IsNullOrWhiteSpace(correlationId))
         {
             return correlationId.ToString();
@@ -462,7 +462,7 @@ public class GlobalExceptionHandlerMiddleware
     {
         // Check Accept header to determine preferred response format
         var acceptHeader = context.Request.Headers.Accept.FirstOrDefault();
-        
+
         if (!string.IsNullOrEmpty(acceptHeader))
         {
             if (acceptHeader.Contains("application/json", StringComparison.OrdinalIgnoreCase))
