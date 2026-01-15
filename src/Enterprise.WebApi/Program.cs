@@ -411,6 +411,12 @@ try
     // Configure the HTTP request pipeline
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
+    // Request/Response logging (skip in Testing environment for cleaner test output)
+    if (!app.Environment.IsEnvironment("Testing"))
+    {
+        app.UseMiddleware<RequestResponseLoggingMiddleware>();
+    }
+
     if (!app.Environment.IsDevelopment())
     {
         app.UseHsts();
