@@ -1,4 +1,4 @@
-# Enterprise DataSeeder CLI
+# Enterprise Commands CLI
 
 A command-line utility for managing database seeding and migrations for the Enterprise Web API.
 
@@ -17,10 +17,10 @@ A command-line utility for managing database seeding and migrations for the Ente
 
 ## Installation
 
-Navigate to the DataSeeder directory:
+Navigate to the Commands directory:
 
 ```bash
-cd src/Enterprise.DataSeeder
+cd src/Enterprise.Commands
 ```
 
 Restore dependencies:
@@ -135,7 +135,7 @@ Edit `appsettings.json` to configure:
 Logs are written to:
 
 - **Console**: Real-time output
-- **File**: `logs/seeder-{date}.txt` (rolling daily)
+- **File**: `logs/commands-{date}.txt` (rolling daily)
 
 ## Examples
 
@@ -220,14 +220,14 @@ Use in automated pipelines:
 
 ```bash
 # GitHub Actions / Azure DevOps example
-cd src/Enterprise.DataSeeder
+cd src/Enterprise.Commands
 dotnet run migrate  # Ensure schema is current
 dotnet run seed --products 1000 --users 100  # Minimal test data
 ```
 
 ## Development
 
-The seeder uses:
+The program uses:
 
 - **System.CommandLine**: CLI parsing and command handling
 - **Serilog**: Structured logging

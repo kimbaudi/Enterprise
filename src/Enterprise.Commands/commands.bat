@@ -1,11 +1,11 @@
 @echo off
-REM Enterprise DataSeeder CLI - Windows Batch Script
-REM Usage: seeder.bat [command] [options]
+REM Enterprise Commands CLI - Windows Batch Script
+REM Usage: commands.bat [command] [options]
 
 cd /d "%~dp0"
 
 if "%1"=="" (
-    echo Usage: seeder.bat [command] [options]
+    echo Usage: commands.bat [command] [options]
     echo.
     echo Commands:
     echo   seed      - Seed the database with sample data
@@ -14,13 +14,13 @@ if "%1"=="" (
     echo   reset     - Drop, recreate, and seed the database
     echo.
     echo Examples:
-    echo   seeder.bat seed
-    echo   seeder.bat seed --products 50000 --users 5000
-    echo   seeder.bat clear --confirm
-    echo   seeder.bat migrate
-    echo   seeder.bat reset --products 100
+    echo   commands.bat seed
+    echo   commands.bat seed --products 50000 --users 5000
+    echo   commands.bat clear --confirm
+    echo   commands.bat migrate
+    echo   commands.bat reset --products 100
     echo.
-    echo For more help: seeder.bat help
+    echo For more help: commands.bat help
     exit /b 0
 )
 
