@@ -36,10 +36,11 @@ try
     // Add HttpContextAccessor for CurrentUserService
     builder.Services.AddHttpContextAccessor();
 
-    // Add services to the container  
+    // Add services to the container
     if (builder.Environment.IsEnvironment("Testing"))
     {
-        // Use Newtonsoft.Json in test environment to avoid PipeWriter issues
+        // Use Newtonsoft.Json in test environment to work around WebApplicationFactory PipeWriter limitations
+        // The in-memory test server's PipeWriter doesn't implement UnflushedBytes required for System.Text.Json async
         builder.Services.AddControllers().AddNewtonsoftJson();
     }
     else

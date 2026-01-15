@@ -19,10 +19,13 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureServices(services =>
         {
-            // Configure Kestrel to use synchronous IO
+            // Configure Kestrel for HTTP/2 support in tests
             services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
             {
-                options.AllowSynchronousIO = true;
+                options.ConfigureEndpointDefaults(listenOptions =>
+                {
+                    listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1AndHttp2;
+                });
             });
 
             // Remove the existing ApplicationDbContext registration

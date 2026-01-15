@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+using System.Text.Json;
 
 namespace Enterprise.Integration.Tests.Infrastructure;
 
@@ -9,25 +9,31 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
 {
     protected readonly CustomWebApplicationFactory Factory;
     protected readonly HttpClient Client;
+    protected static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
 
     protected IntegrationTestBase(CustomWebApplicationFactory factory)
     {
         Factory = factory;
-        // Create client with specific options to avoid PipeWriter issue in tests
+        // Create client with HTTP/2 support
         Client = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false,
             HandleCookies = true
         });
+        Client.DefaultRequestVersion = new Version(2, 0);
     }
 
     /// <summary>
-    /// Deserializes HTTP response content using Newtonsoft.Json (matches API serialization)
+    /// Deserializes HTTP response content using System.Text.Json with async serialization
     /// </summary>
     protected async Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response)
     {
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonConvert.DeserializeObject<T>(json);
+        var stream = await response.Content.ReadAsStreamAsync();
+        return await JsonSerializer.DeserializeAsync<T>(stream, JsonOptions);
     }
 
     /// <summary>

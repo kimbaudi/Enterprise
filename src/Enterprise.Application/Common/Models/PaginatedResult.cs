@@ -13,6 +13,11 @@ public class PaginatedResult<T>
     public bool HasPreviousPage => PageNumber > 1;
     public bool HasNextPage => PageNumber < TotalPages;
 
+    // Parameterless constructor for JSON deserialization
+    public PaginatedResult()
+    {
+    }
+
     public PaginatedResult(List<T> items, int count, int pageNumber, int pageSize)
     {
         Items = items;
