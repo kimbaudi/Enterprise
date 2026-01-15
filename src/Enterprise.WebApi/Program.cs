@@ -408,11 +408,14 @@ try
 
     var app = builder.Build();
 
+    // Determine if we're running in a testing environment
+    var isTestingEnvironment = app.Environment.IsEnvironment("Testing");
+
     // Configure the HTTP request pipeline
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
     // Request/Response logging (skip in Testing environment for cleaner test output)
-    if (!app.Environment.IsEnvironment("Testing"))
+    if (!isTestingEnvironment)
     {
         app.UseMiddleware<RequestResponseLoggingMiddleware>();
     }
@@ -491,7 +494,7 @@ try
     app.MapReverseProxy();
 
     // Health check endpoints and Hangfire jobs (skip in Testing environment)
-    if (!app.Environment.IsEnvironment("Testing"))
+    if (!isTestingEnvironment)
     {
         // Health check endpoints
         app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
