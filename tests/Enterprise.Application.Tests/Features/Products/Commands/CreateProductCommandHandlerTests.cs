@@ -13,6 +13,7 @@ public class CreateProductCommandHandlerTests
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IRepository<Product>> _productRepositoryMock;
     private readonly Mock<IMapper> _mapperMock;
+    private readonly Mock<ICacheService> _cacheServiceMock;
     private readonly CreateProductCommandHandler _handler;
 
     public CreateProductCommandHandlerTests()
@@ -20,11 +21,13 @@ public class CreateProductCommandHandlerTests
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _productRepositoryMock = new Mock<IRepository<Product>>();
         _mapperMock = new Mock<IMapper>();
+        _cacheServiceMock = new Mock<ICacheService>();
 
         _handler = new CreateProductCommandHandler(
             _productRepositoryMock.Object,
             _unitOfWorkMock.Object,
-            _mapperMock.Object);
+            _mapperMock.Object,
+            _cacheServiceMock.Object);
     }
 
     [Fact]

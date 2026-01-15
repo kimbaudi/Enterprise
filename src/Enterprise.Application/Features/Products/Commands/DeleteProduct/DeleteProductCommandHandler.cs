@@ -9,13 +9,16 @@ public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand,
 {
     private readonly IRepository<Product> _productRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICacheService _cacheService;
 
     public DeleteProductCommandHandler(
         IRepository<Product> productRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        ICacheService cacheService)
     {
         _productRepository = productRepository;
         _unitOfWork = unitOfWork;
+        _cacheService = cacheService;
     }
 
     public async Task<bool> Handle(DeleteProductCommand request, CancellationToken cancellationToken)
@@ -29,6 +32,9 @@ public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand,
 
         await _productRepository.DeleteAsync(request.Id, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Invalidate product list cache
+        await _cacheService.RemoveByPatternAsync("products:paginated:*", cancellationToken);
 
         return true;
     }

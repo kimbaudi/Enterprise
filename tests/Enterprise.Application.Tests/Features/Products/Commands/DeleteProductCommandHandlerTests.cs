@@ -11,16 +11,19 @@ public class DeleteProductCommandHandlerTests
 {
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
     private readonly Mock<IRepository<Product>> _productRepositoryMock;
+    private readonly Mock<ICacheService> _cacheServiceMock;
     private readonly DeleteProductCommandHandler _handler;
 
     public DeleteProductCommandHandlerTests()
     {
         _unitOfWorkMock = new Mock<IUnitOfWork>();
         _productRepositoryMock = new Mock<IRepository<Product>>();
+        _cacheServiceMock = new Mock<ICacheService>();
 
         _handler = new DeleteProductCommandHandler(
             _productRepositoryMock.Object,
-            _unitOfWorkMock.Object);
+            _unitOfWorkMock.Object,
+            _cacheServiceMock.Object);
     }
 
     [Fact]

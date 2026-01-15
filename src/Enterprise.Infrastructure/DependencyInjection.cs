@@ -21,8 +21,8 @@ public static class DependencyInjection
 
         // Add Repository Pattern
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-        services.AddScoped<Application.Common.Interfaces.IUserRepository, UserRepository>();
-        services.AddScoped<Application.Common.Interfaces.IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
@@ -33,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<ITwoFactorService, TwoFactorService>();
+        services.AddScoped<ICacheService, RedisCacheService>();
 
         // Background Services
         services.AddHostedService<AuditLogProcessor>();

@@ -281,10 +281,19 @@ try
     {
         // Add Health Checks
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+        var redisConfiguration = builder.Configuration["Redis:Configuration"];
+
         builder.Services.AddHealthChecks()
-            .AddSqlServer(connectionString ?? throw new InvalidOperationException("Connection string not found"),
-                name: "database",
-                tags: new[] { "db", "sql", "ready" });
+            .AddSqlServer(
+                connectionString ?? throw new InvalidOperationException("Connection string not found"),
+                name: "sql-server",
+                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Unhealthy,
+                tags: new[] { "db", "sql", "ready" })
+            .AddRedis(
+                redisConfiguration ?? "localhost:6379",
+                name: "redis-cache",
+                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
+                tags: new[] { "cache", "redis", "ready" });
 
         // Add Redis Distributed Cache
         builder.Services.AddStackExchangeRedisCache(options =>
@@ -313,6 +322,11 @@ try
         // Register background jobs (from Infrastructure layer)
         builder.Services.AddScoped<DatabaseCleanupJob>();
         builder.Services.AddScoped<ReportGenerationJob>();
+    }
+    else
+    {
+        // Testing environment: use in-memory distributed cache
+        builder.Services.AddDistributedMemoryCache();
     }
 
     var app = builder.Build();
@@ -385,7 +399,28 @@ try
     if (!app.Environment.IsEnvironment("Testing"))
     {
         // Health check endpoints
-        app.MapHealthChecks("/health");
+        app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            ResponseWriter = async (context, report) =>
+            {
+                context.Response.ContentType = "application/json";
+                var result = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    status = report.Status.ToString(),
+                    totalDuration = report.TotalDuration.TotalMilliseconds,
+                    checks = report.Entries.Select(e => new
+                    {
+                        name = e.Key,
+                        status = e.Value.Status.ToString(),
+                        description = e.Value.Description ?? "No description",
+                        duration = e.Value.Duration.TotalMilliseconds,
+                        tags = e.Value.Tags
+                    })
+                });
+                await context.Response.WriteAsync(result);
+            }
+        });
+
         app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
         {
             Predicate = check => check.Tags.Contains("ready"),
@@ -395,18 +430,29 @@ try
                 var result = System.Text.Json.JsonSerializer.Serialize(new
                 {
                     status = report.Status.ToString(),
+                    totalDuration = report.TotalDuration.TotalMilliseconds,
                     checks = report.Entries.Select(e => new
                     {
                         name = e.Key,
                         status = e.Value.Status.ToString(),
-                        description = e.Value.Description,
-                        duration = e.Value.Duration.ToString()
+                        description = e.Value.Description ?? "No description",
+                        duration = e.Value.Duration.TotalMilliseconds,
+                        tags = e.Value.Tags
                     })
                 });
                 await context.Response.WriteAsync(result);
             }
         });
-        app.MapHealthChecks("/health/live");
+
+        app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            Predicate = _ => false, // Exclude all checks, just return 200 if app is running
+            ResponseWriter = async (context, report) =>
+            {
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync("{\"status\":\"Healthy\"}");
+            }
+        });
 
         // Configure recurring background jobs
         RecurringJob.AddOrUpdate<DatabaseCleanupJob>(

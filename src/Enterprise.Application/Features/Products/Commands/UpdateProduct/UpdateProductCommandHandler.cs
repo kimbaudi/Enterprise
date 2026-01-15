@@ -12,15 +12,18 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
     private readonly IRepository<Product> _productRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMapper _mapper;
+    private readonly ICacheService _cacheService;
 
     public UpdateProductCommandHandler(
         IRepository<Product> productRepository,
         IUnitOfWork unitOfWork,
-        IMapper mapper)
+        IMapper mapper,
+        ICacheService cacheService)
     {
         _productRepository = productRepository;
         _unitOfWork = unitOfWork;
         _mapper = mapper;
+        _cacheService = cacheService;
     }
 
     public async Task<ProductDto> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
@@ -41,6 +44,9 @@ public class UpdateProductCommandHandler : IRequestHandler<UpdateProductCommand,
 
         await _productRepository.UpdateAsync(existingProduct, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Invalidate product list cache
+        await _cacheService.RemoveByPatternAsync("products:paginated:*", cancellationToken);
 
         return _mapper.Map<ProductDto>(existingProduct);
     }
