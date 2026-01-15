@@ -1,11 +1,11 @@
-# DataSeeder CLI - Quick Start Guide
+# Commands CLI - Quick Start Guide
 
 ## 🚀 Get Started in 3 Steps
 
-### Step 1: Navigate to DataSeeder
+### Step 1: Navigate to Commands
 
 ```bash
-cd src/Enterprise.DataSeeder
+cd src/Enterprise.Commands
 ```
 
 ### Step 2: Run Your First Command
@@ -116,19 +116,19 @@ dotnet run -- seed --force
 **Windows (PowerShell):**
 
 ```powershell
-.\seeder.ps1 seed --products 5000
+.\commands.ps1 seed --products 5000
 ```
 
 **Linux/macOS:**
 
 ```bash
-chmod +x seeder.sh
-./seeder.sh seed --products 5000
+chmod +x commands.sh
+./commands.sh seed --products 5000
 ```
 
 ### 2. Check Logs
 
-Logs are saved to `logs/seeder-{date}.txt`
+Logs are saved to `logs/commands-{date}.txt`
 
 ### 3. Get Help Anytime
 
@@ -182,7 +182,7 @@ dotnet run -- migrate
 dotnet run -- seed --force --products 50000 --users 5000
 
 # 3. Automate in scripts
-./seeder.ps1 reset && ./seeder.ps1 seed --products 100
+./commands.ps1 reset && ./commands.ps1 seed --products 100
 ```
 
 ---
@@ -207,7 +207,7 @@ dotnet run -- seed --force --products 50000 --users 5000
 Make sure you're in the correct directory:
 
 ```bash
-cd src/Enterprise.DataSeeder
+cd src/Enterprise.Commands
 ```
 
 ### "Cannot connect to database"
@@ -228,8 +228,8 @@ dotnet ef database update --project src/Enterprise.Infrastructure --startup-proj
 ## 📚 More Resources
 
 - **Full Documentation**: [README.md](README.md)
-- **Quick Reference**: [../../docs/DATASEEDER-CLI.md](../../docs/DATASEEDER-CLI.md)
-- **Implementation Details**: [../../docs/DATASEEDER-IMPLEMENTATION.md](../../docs/DATASEEDER-IMPLEMENTATION.md)
+- **Quick Reference**: [../../docs/COMMANDS-CLI.md](../../docs/COMMANDS-CLI.md)
+- **Implementation Details**: [../../docs/COMMANDS-IMPLEMENTATION.md](../../docs/COMMANDS-IMPLEMENTATION.md)
 
 ---
 

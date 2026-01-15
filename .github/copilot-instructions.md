@@ -114,7 +114,7 @@ dotnet ef migrations add {MigrationName} --project src/Enterprise.Infrastructure
 dotnet ef database update --project src/Enterprise.Infrastructure --startup-project src/Enterprise.WebApi
 
 # Seed data (10k products, 1k users)
-cd src/Enterprise.DataSeeder && dotnet run
+cd src/Enterprise.Commands && dotnet run
 ```
 
 **Repository Pattern**: Use `IRepository<T>` and `IUnitOfWork`, never inject `ApplicationDbContext` into handlers.

@@ -1,49 +1,49 @@
-# DataSeeder CLI Quick Reference
+# Commands CLI Quick Reference
 
 ## Location
 
-`src/Enterprise.DataSeeder/`
+`src/Enterprise.Commands/`
 
 ## Quick Commands
 
 ### Windows (PowerShell)
 
 ```powershell
-cd src\Enterprise.DataSeeder
-.\seeder.ps1 seed
-.\seeder.ps1 seed --products 50000 --users 5000
-.\seeder.ps1 clear --confirm
-.\seeder.ps1 migrate
-.\seeder.ps1 reset
+cd src\Enterprise.Commands
+.\commands.ps1 seed
+.\commands.ps1 seed --products 50000 --users 5000
+.\commands.ps1 clear --confirm
+.\commands.ps1 migrate
+.\commands.ps1 reset
 ```
 
 ### Windows (Command Prompt)
 
 ```cmd
-cd src\Enterprise.DataSeeder
-seeder.bat seed
-seeder.bat seed --products 50000 --users 5000
-seeder.bat clear --confirm
-seeder.bat migrate
-seeder.bat reset
+cd src\Enterprise.Commands
+commands.bat seed
+commands.bat seed --products 50000 --users 5000
+commands.bat clear --confirm
+commands.bat migrate
+commands.bat reset
 ```
 
 ### Linux/macOS
 
 ```bash
-cd src/Enterprise.DataSeeder
-chmod +x seeder.sh
-./seeder.sh seed
-./seeder.sh seed --products 50000 --users 5000
-./seeder.sh clear --confirm
-./seeder.sh migrate
-./seeder.sh reset
+cd src/Enterprise.Commands
+chmod +x commands.sh
+./commands.sh seed
+./commands.sh seed --products 50000 --users 5000
+./commands.sh clear --confirm
+./commands.sh migrate
+./commands.sh reset
 ```
 
 ### Direct .NET Command
 
 ```bash
-cd src/Enterprise.DataSeeder
+cd src/Enterprise.Commands
 dotnet run -- seed
 dotnet run -- seed --products 50000 --users 5000
 dotnet run -- clear --confirm
@@ -109,8 +109,8 @@ dotnet run -- seed --products 20000 --users 2000
 ## Logs
 
 - Console: Real-time output
-- File: `logs/seeder-{date}.txt`
+- File: `logs/commands-{date}.txt`
 
 ## Full Documentation
 
-See [README.md](../src/Enterprise.DataSeeder/README.md) for detailed documentation.
+See [README.md](../src/Enterprise.Commands/README.md) for detailed documentation.
