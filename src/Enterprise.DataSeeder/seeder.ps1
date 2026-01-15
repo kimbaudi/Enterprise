@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
-# Enterprise Commands CLI - PowerShell Script
-# Usage: ./commands.ps1 [command] [options]
+# Enterprise DataSeeder CLI - PowerShell Script
+# Usage: ./seeder.ps1 [command] [options]
 
 param(
     [Parameter(Position = 0)]
@@ -14,10 +14,10 @@ param(
 Set-Location $PSScriptRoot
 
 if ([string]::IsNullOrEmpty($Command)) {
-    Write-Host "Enterprise Commands CLI" -ForegroundColor Cyan
+    Write-Host "Enterprise DataSeeder CLI" -ForegroundColor Cyan
     Write-Host "=========================" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Usage: ./commands.ps1 [command] [options]" -ForegroundColor Yellow
+    Write-Host "Usage: ./seeder.ps1 [command] [options]" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Commands:" -ForegroundColor Green
     Write-Host "  seed      - Seed the database with sample data"
@@ -26,13 +26,13 @@ if ([string]::IsNullOrEmpty($Command)) {
     Write-Host "  reset     - Drop, recreate, and seed the database"
     Write-Host ""
     Write-Host "Examples:" -ForegroundColor Green
-    Write-Host "  ./commands.ps1 seed"
-    Write-Host "  ./commands.ps1 seed --products 50000 --users 5000"
-    Write-Host "  ./commands.ps1 clear --confirm"
-    Write-Host "  ./commands.ps1 migrate"
-    Write-Host "  ./commands.ps1 reset --products 100"
+    Write-Host "  ./seeder.ps1 seed"
+    Write-Host "  ./seeder.ps1 seed --products 50000 --users 5000"
+    Write-Host "  ./seeder.ps1 clear --confirm"
+    Write-Host "  ./seeder.ps1 migrate"
+    Write-Host "  ./seeder.ps1 reset --products 100"
     Write-Host ""
-    Write-Host "For more help: ./commands.ps1 help" -ForegroundColor Yellow
+    Write-Host "For more help: ./seeder.ps1 help" -ForegroundColor Yellow
     exit 0
 }
 

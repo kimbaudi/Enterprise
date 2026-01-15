@@ -1,4 +1,4 @@
-# Commands CLI Implementation Summary
+# DataSeeder CLI Implementation Summary
 
 ## Overview
 
@@ -17,15 +17,15 @@ Created a comprehensive command-line utility for database seeding and management
 
 ### 2. Cross-Platform Scripts
 
-- **commands.ps1** - PowerShell script for Windows
-- **commands.bat** - Windows Command Prompt batch file
-- **commands.sh** - Bash script for Linux/macOS
+- **seeder.ps1** - PowerShell script for Windows
+- **seeder.bat** - Windows Command Prompt batch file
+- **seeder.sh** - Bash script for Linux/macOS
 
 ### 3. Documentation
 
 - **README.md** - Complete CLI documentation with examples
-- **COMMANDS-CLI.md** - Quick reference guide in docs folder
-- Updated main README.md with commands information
+- **DATASEEDER-CLI.md** - Quick reference guide in docs folder
+- Updated main README.md with seeder information
 
 ## Key Features
 
@@ -80,7 +80,7 @@ dotnet run -- --version          # Version info
 ### Quick Setup (Development)
 
 ```bash
-cd src/Enterprise.Commands
+cd src/Enterprise.DataSeeder
 dotnet run -- migrate
 dotnet run -- seed
 ```
@@ -103,16 +103,16 @@ dotnet run -- seed --products 200 --users 20
 **Windows PowerShell:**
 
 ```powershell
-cd src\Enterprise.Commands
-.\commands.ps1 seed --products 5000
+cd src\Enterprise.DataSeeder
+.\seeder.ps1 seed --products 5000
 ```
 
 **Linux/macOS:**
 
 ```bash
-cd src/Enterprise.Commands
-chmod +x commands.sh
-./commands.sh seed --products 5000
+cd src/Enterprise.DataSeeder
+chmod +x seeder.sh
+./seeder.sh seed --products 5000
 ```
 
 ## Technical Implementation
@@ -135,7 +135,7 @@ Program.cs
 ### Logging
 
 - **Serilog** for structured logging
-- Outputs to console and `logs/commands-{date}.txt`
+- Outputs to console and `logs/seeder-{date}.txt`
 - Colored console output with success/error indicators
 
 ### Integration
@@ -149,16 +149,16 @@ Program.cs
 
 ### Created
 
-- `src/Enterprise.Commands/README.md` - Full documentation
-- `src/Enterprise.Commands/commands.ps1` - PowerShell script
-- `src/Enterprise.Commands/commands.bat` - Batch script
-- `src/Enterprise.Commands/commands.sh` - Bash script
-- `docs/COMMANDS-CLI.md` - Quick reference
+- `src/Enterprise.DataSeeder/README.md` - Full documentation
+- `src/Enterprise.DataSeeder/seeder.ps1` - PowerShell script
+- `src/Enterprise.DataSeeder/seeder.bat` - Batch script
+- `src/Enterprise.DataSeeder/seeder.sh` - Bash script
+- `docs/DATASEEDER-CLI.md` - Quick reference
 
 ### Modified
 
-- `src/Enterprise.Commands/Program.cs` - Complete rewrite with CLI
-- `src/Enterprise.Commands/Enterprise.Commands.csproj` - Added System.CommandLine
+- `src/Enterprise.DataSeeder/Program.cs` - Complete rewrite with CLI
+- `src/Enterprise.DataSeeder/Enterprise.DataSeeder.csproj` - Added System.CommandLine
 - `README.md` - Added seeding step to installation
 - `src/Enterprise.Application/Common/Behaviors/ValidationBehavior.cs` - Fixed namespace
 

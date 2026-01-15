@@ -7,7 +7,6 @@ using Enterprise.WebApi.BackgroundJobs;
 using Enterprise.WebApi.Common;
 using Enterprise.WebApi.Configuration;
 using Enterprise.WebApi.FeatureFlags;
-using Enterprise.WebApi.HealthChecks;
 using Enterprise.WebApi.Middleware;
 using Enterprise.WebApi.Services;
 using Hangfire;
@@ -366,8 +365,21 @@ try
             options.QueueLimit = 0;
         });
 
-        // Configure enhanced per-user rate limiting with role-based tiers
-        PerUserRateLimiterPolicy.ConfigurePerUserRateLimiting(options);
+        // Per-user rate limiting (for authenticated requests)
+        options.AddPolicy("perUser", httpContext =>
+        {
+            var username = httpContext.User.Identity?.Name ?? "anonymous";
+
+            return RateLimitPartition.GetTokenBucketLimiter(username, _ => new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = 100,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 5,
+                ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                TokensPerPeriod = 50,
+                AutoReplenishment = true
+            });
+        });
 
         // Sliding window for smoother rate limiting
         options.AddSlidingWindowLimiter("smooth", options =>
@@ -426,13 +438,7 @@ try
             },
                 name: "hangfire",
                 failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
-                tags: new[] { "jobs", "hangfire", "ready" })
-            .AddCheck<ApplicationHealthCheck>("application",
-                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
-                tags: new[] { "app", "ready" })
-            .AddCheck<EmailServiceHealthCheck>("email-service",
-                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
-                tags: new[] { "email", "live" });
+                tags: new[] { "jobs", "hangfire", "ready" });
 
         // Add Redis Distributed Cache
         builder.Services.AddStackExchangeRedisCache(options =>
@@ -480,12 +486,6 @@ try
     // Correlation ID middleware (must be first for proper tracing across all requests)
     app.UseMiddleware<CorrelationIdMiddleware>();
 
-    // Response timing middleware (adds performance headers)
-    app.UseMiddleware<ResponseTimingMiddleware>();
-
-    // Request ID middleware (injects correlation ID into response bodies)
-    app.UseMiddleware<RequestIdMiddleware>();
-
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
     // Metrics tracking (skip in Testing environment)
@@ -519,23 +519,6 @@ try
 
     // Cache eviction middleware (after output caching)
     app.UseMiddleware<CacheEvictionMiddleware>();
-
-    // Response caching (client-side, must be before static files)
-    app.UseResponseCaching();
-
-    // Ensure uploads directory exists
-    var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
-    if (!Directory.Exists(uploadsPath))
-    {
-        Directory.CreateDirectory(uploadsPath);
-    }
-
-    // Serve static files from uploads directory
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
-        RequestPath = "/uploads"
-    });
 
     if (app.Environment.IsDevelopment())
     {
@@ -577,16 +560,22 @@ try
         });
     }
 
-    // Add CORS (must be before authentication and rate limiting)
-    // Use environment-specific CORS policy for security
-    if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+    // Add Response Caching Middleware
+    app.UseResponseCaching();
+
+    // Ensure uploads directory exists
+    var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+    if (!Directory.Exists(uploadsPath))
     {
-        app.UseCors("AllowAll"); // Permissive for development/testing
+        Directory.CreateDirectory(uploadsPath);
     }
-    else
+
+    // Serve static files from uploads directory
+    app.UseStaticFiles(new StaticFileOptions
     {
-        app.UseCors("Production"); // Restricted origins in production
-    }
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+        RequestPath = "/uploads"
+    });
 
     // Add security headers
     app.Use(async (context, next) =>
@@ -597,6 +586,8 @@ try
         context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
         await next();
     });
+
+    app.UseCors("AllowAll");
 
     // Add Rate Limiting Middleware (must be after routing, before auth)
     app.UseRateLimiter();

@@ -128,11 +128,11 @@ Request → Logging → Validation → Performance → Handler → Response
 5. **Seed the database (optional but recommended)**
 
    ```bash
-   cd src/Enterprise.Commands
+   cd src/Enterprise.DataSeeder
    dotnet run -- seed
    ```
 
-   This creates default users and sample data. See [Commands CLI documentation](docs/COMMANDS-CLI.md) for more options.
+   This creates default users and sample data. See [DataSeeder CLI documentation](docs/DATASEEDER-CLI.md) for more options.
 
    **Default test users:**
    - `admin` / `Admin@123` (Admin role)
