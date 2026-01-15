@@ -48,8 +48,72 @@ try
         builder.Services.AddControllers();
     }
 
-    // Add Response Caching
+    // Add Response Compression (Gzip and Brotli)
+    builder.Services.AddResponseCompression(options =>
+    {
+        options.EnableForHttps = true;
+        options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+        options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+        options.MimeTypes = Microsoft.AspNetCore.ResponseCompression.ResponseCompressionDefaults.MimeTypes.Concat(
+            new[] { "application/json", "application/xml", "text/plain", "text/css", "text/javascript" });
+    });
+
+    builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(options =>
+    {
+        options.Level = System.IO.Compression.CompressionLevel.Fastest;
+    });
+
+    builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options =>
+    {
+        options.Level = System.IO.Compression.CompressionLevel.Fastest;
+    });
+
+    // Add Response Caching (client-side)
     builder.Services.AddResponseCaching();
+
+    // Add Output Caching (server-side with Redis)
+    builder.Services.AddOutputCache(options =>
+    {
+        // Default policy: 60 seconds cache
+        options.AddBasePolicy(builder => builder.Expire(TimeSpan.FromSeconds(60)));
+
+        // Products list: 2 minutes, vary by query string
+        options.AddPolicy("products-list", builder => builder
+            .Expire(TimeSpan.FromMinutes(2))
+            .SetVaryByQuery("pageNumber", "pageSize", "searchTerm", "sortBy")
+            .Tag("products"));
+
+        // Product by ID: 5 minutes
+        options.AddPolicy("product-details", builder => builder
+            .Expire(TimeSpan.FromMinutes(5))
+            .SetVaryByRouteValue("id")
+            .Tag("products"));
+
+        // Products by category: 3 minutes
+        options.AddPolicy("products-category", builder => builder
+            .Expire(TimeSpan.FromMinutes(3))
+            .SetVaryByRouteValue("category")
+            .SetVaryByQuery("pageNumber", "pageSize")
+            .Tag("products"));
+
+        // Search results: 1 minute (more dynamic)
+        options.AddPolicy("products-search", builder => builder
+            .Expire(TimeSpan.FromMinutes(1))
+            .SetVaryByQuery("searchTerm", "minPrice", "maxPrice", "category", "pageNumber", "pageSize")
+            .Tag("products"));
+
+        // Users list: 30 seconds (more sensitive data)
+        options.AddPolicy("users-list", builder => builder
+            .Expire(TimeSpan.FromSeconds(30))
+            .SetVaryByQuery("pageNumber", "pageSize", "searchTerm", "isActive")
+            .Tag("users"));
+
+        // User details: 1 minute
+        options.AddPolicy("user-details", builder => builder
+            .Expire(TimeSpan.FromMinutes(1))
+            .SetVaryByRouteValue("id")
+            .Tag("users"));
+    });
 
     // Add API Versioning
     builder.Services.AddApiVersioning(options =>
@@ -340,6 +404,15 @@ try
     }
 
     app.UseHttpsRedirection();
+
+    // Response compression (must be early in pipeline)
+    app.UseResponseCompression();
+
+    // Output caching (must be before response caching)
+    app.UseOutputCache();
+
+    // Cache eviction middleware (after output caching)
+    app.UseMiddleware<CacheEvictionMiddleware>();
 
     if (app.Environment.IsDevelopment())
     {

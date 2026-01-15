@@ -37,7 +37,7 @@ public class ProductsController : ControllerBase
     /// Get all products with pagination
     /// </summary>
     [HttpGet]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "pageNumber", "pageSize", "searchTerm", "sortBy" })]
+    [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "products-list")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<PaginatedResult<ProductDto>>>> GetProducts(
         [FromQuery] int pageNumber = 1,
@@ -55,7 +55,7 @@ public class ProductsController : ControllerBase
     /// Get product by ID
     /// </summary>
     [HttpGet("{id}")]
-    [ResponseCache(Duration = 120, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "id" })]
+    [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "product-details")]
     [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<ProductDto>>> GetProductById(Guid id, CancellationToken cancellationToken)
@@ -69,7 +69,7 @@ public class ProductsController : ControllerBase
     /// Get products by category
     /// </summary>
     [HttpGet("category/{category}")]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "category", "pageNumber", "pageSize" })]
+    [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "products-category")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<PaginatedResult<ProductDto>>>> GetProductsByCategory(
         string category,
@@ -86,7 +86,7 @@ public class ProductsController : ControllerBase
     /// Search products with filters
     /// </summary>
     [HttpGet("search")]
-    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any, VaryByQueryKeys = new[] { "searchTerm", "minPrice", "maxPrice", "category", "pageNumber", "pageSize" })]
+    [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "products-search")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<ProductDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<PaginatedResult<ProductDto>>>> SearchProducts(
         [FromQuery] string searchTerm,

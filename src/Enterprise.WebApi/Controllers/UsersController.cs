@@ -71,6 +71,7 @@ public class UsersController : ControllerBase
     /// </summary>
     [HttpGet]
     [Authorize(Roles = "Admin")]
+    [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "users-list")]
     [ProducesResponseType(typeof(ApiResponse<PaginatedResult<UserDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<PaginatedResult<UserDto>>>> GetUsers(
         [FromQuery] int pageNumber = 1,
@@ -89,6 +90,7 @@ public class UsersController : ControllerBase
     /// </summary>
     [HttpGet("{id}")]
     [Authorize(Roles = "Admin")]
+    [Microsoft.AspNetCore.OutputCaching.OutputCache(PolicyName = "user-details")]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<UserDto>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<UserDto>>> GetUserById(Guid id, CancellationToken cancellationToken)
