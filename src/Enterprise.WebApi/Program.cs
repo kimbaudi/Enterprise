@@ -577,6 +577,17 @@ try
         RequestPath = "/uploads"
     });
 
+    // Add CORS (must be before authentication and rate limiting)
+    // Use environment-specific CORS policy for security
+    if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+    {
+        app.UseCors("AllowAll"); // Permissive for development/testing
+    }
+    else
+    {
+        app.UseCors("Production"); // Restricted origins in production
+    }
+
     // Add security headers
     app.Use(async (context, next) =>
     {
@@ -586,8 +597,6 @@ try
         context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
         await next();
     });
-
-    app.UseCors("AllowAll");
 
     // Add Rate Limiting Middleware (must be after routing, before auth)
     app.UseRateLimiter();
