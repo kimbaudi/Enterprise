@@ -129,6 +129,11 @@ try
 
     builder.Services.AddEndpointsApiExplorer();
 
+    // Add YARP Reverse Proxy (API Gateway)
+    builder.Services.AddReverseProxy()
+        .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
+        .AddConfigFilter<YarpConfigFilter>();
+
     // Configure Swagger/OpenAPI
     builder.Services.AddSwaggerGen(options =>
     {
@@ -475,6 +480,9 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
+
+    // YARP Reverse Proxy - Map gateway routes
+    app.MapReverseProxy();
 
     // Health check endpoints and Hangfire jobs (skip in Testing environment)
     if (!app.Environment.IsEnvironment("Testing"))

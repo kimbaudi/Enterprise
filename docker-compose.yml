@@ -1,5 +1,26 @@
 services:
-  enterprise:
+  # API Gateway (YARP Reverse Proxy)
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=EnterpriseDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True
+      - Redis__Configuration=redis:6379
+      - ReverseProxy__Clusters__products-cluster__Destinations__destination1__Address=http://enterprise-api:80
+      - ReverseProxy__Clusters__users-cluster__Destinations__destination1__Address=http://enterprise-api:80
+      - ReverseProxy__Clusters__auth-cluster__Destinations__destination1__Address=http://enterprise-api:80
+    depends_on:
+      - enterprise-api
+    networks:
+      - enterprise-network
+
+  # Main API Service
+  enterprise-api:
     build:
       context: .
       dockerfile: Dockerfile

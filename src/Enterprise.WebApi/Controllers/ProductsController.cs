@@ -10,6 +10,7 @@ using Enterprise.Application.Features.Products.Queries.GetDeletedProducts;
 using Enterprise.Application.Features.Products.Queries.GetProductById;
 using Enterprise.Application.Features.Products.Queries.GetProductsByCategory;
 using Enterprise.Application.Features.Products.Queries.GetProductsPaginated;
+using Enterprise.Application.Features.Products.Queries.GetProductsStreaming;
 using Enterprise.Application.Features.Products.Queries.SearchProducts;
 using Enterprise.WebApi.Common;
 using MediatR;
@@ -49,6 +50,25 @@ public class ProductsController : ControllerBase
         var query = new GetProductsPaginatedQuery(pageNumber, pageSize, searchTerm, sortBy);
         var result = await _mediator.Send(query, cancellationToken);
         return Ok(new ApiResponse<PaginatedResult<ProductDto>>(result));
+    }
+
+    /// <summary>
+    /// Stream products with pagination (memory-efficient for large datasets)
+    /// </summary>
+    [HttpGet("stream")]
+    [ProducesResponseType(typeof(IAsyncEnumerable<ProductDto>), StatusCodes.Status200OK)]
+    public async IAsyncEnumerable<ProductDto> StreamProducts(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] string? sortBy = null,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var query = new GetProductsStreamingQuery(pageNumber, pageSize, searchTerm, sortBy);
+        await foreach (var product in _mediator.CreateStream(query, cancellationToken))
+        {
+            yield return product;
+        }
     }
 
     /// <summary>
