@@ -507,19 +507,64 @@ try
 
     app.UseHttpsRedirection();
 
-    // Response compression (must be early in pipeline) - controlled by feature flag
-    var featureManager = app.Services.GetRequiredService<IFeatureManager>();
-    if (await featureManager.IsEnabledAsync("ResponseCompression"))
+    // Ensure uploads directory exists
+    var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+    if (!Directory.Exists(uploadsPath))
     {
-        app.UseResponseCompression();
+        Directory.CreateDirectory(uploadsPath);
     }
 
-    // Output caching (must be before response caching)
+    // Serve static files from uploads directory (before routing)
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+        RequestPath = "/uploads"
+    });
+
+    // Routing (explicit call for proper middleware order)
+    app.UseRouting();
+
+    // CORS (after routing, before authentication)
+    // Use environment-specific CORS policy for security
+    if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+    {
+        app.UseCors("AllowAll"); // Permissive for development/testing
+    }
+    else
+    {
+        app.UseCors("Production"); // Restricted origins in production
+    }
+
+    // Response Caching (after routing, before authentication)
+    app.UseResponseCaching();
+
+    // Response compression (after routing)
+    app.UseResponseCompression();
+
+    // Output caching (after routing, before authentication)
     app.UseOutputCache();
 
     // Cache eviction middleware (after output caching)
     app.UseMiddleware<CacheEvictionMiddleware>();
 
+    // Security headers (before authentication)
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+        context.Response.Headers["X-Frame-Options"] = "DENY";
+        context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+        context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+        await next();
+    });
+
+    // Rate Limiting (after routing, before authentication)
+    app.UseRateLimiter();
+    app.UseMiddleware<RateLimitMiddleware>(); // Custom response formatting
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    // Development tools (after authorization)
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
@@ -548,7 +593,7 @@ try
         });
     }
 
-    // Hangfire Dashboard (available in all non-Testing environments)
+    // Hangfire Dashboard (available in all non-Testing environments, after authorization)
     // Requires Admin role for access
     if (!isTestingEnvironment)
     {
@@ -559,51 +604,6 @@ try
             DisplayStorageConnectionString = false // Hide connection string for security
         });
     }
-
-    // Add Response Caching Middleware
-    app.UseResponseCaching();
-
-    // Ensure uploads directory exists
-    var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
-    if (!Directory.Exists(uploadsPath))
-    {
-        Directory.CreateDirectory(uploadsPath);
-    }
-
-    // Serve static files from uploads directory
-    app.UseStaticFiles(new StaticFileOptions
-    {
-        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
-        RequestPath = "/uploads"
-    });
-
-    // Add CORS (must be before authentication and rate limiting)
-    // Use environment-specific CORS policy for security
-    if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
-    {
-        app.UseCors("AllowAll"); // Permissive for development/testing
-    }
-    else
-    {
-        app.UseCors("Production"); // Restricted origins in production
-    }
-
-    // Add security headers
-    app.Use(async (context, next) =>
-    {
-        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-        context.Response.Headers["X-Frame-Options"] = "DENY";
-        context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
-        context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-        await next();
-    });
-
-    // Add Rate Limiting Middleware (must be after routing, before auth)
-    app.UseRateLimiter();
-    app.UseMiddleware<RateLimitMiddleware>(); // Custom response formatting
-
-    app.UseAuthentication();
-    app.UseAuthorization();
 
     app.MapControllers();
 
