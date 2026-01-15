@@ -1,6 +1,7 @@
 using Enterprise.Application.Common.Interfaces;
 using Enterprise.Infrastructure.BackgroundServices;
 using Enterprise.Infrastructure.Persistence;
+using Enterprise.Infrastructure.Policies;
 using Enterprise.Infrastructure.Repositories;
 using Enterprise.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        // Add Resilience Policies (Polly Circuit Breaker, Retry, Timeout)
+        services.AddSingleton<IResiliencePolicyProvider, ResiliencePolicyProvider>();
+
         // Add DbContext with connection resilience
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(

@@ -10,16 +10,19 @@ public class EmailService : IEmailService
 {
     private readonly ILogger<EmailService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly IResiliencePolicyProvider? _policyProvider;
     private readonly string? _sendGridApiKey;
     private readonly string _fromEmail;
     private readonly string _fromName;
 
     public EmailService(
         ILogger<EmailService> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IResiliencePolicyProvider? policyProvider = null)
     {
         _logger = logger;
         _configuration = configuration;
+        _policyProvider = policyProvider;
         _sendGridApiKey = _configuration["EmailSettings:SendGridApiKey"];
         _fromEmail = _configuration["EmailSettings:FromEmail"] ?? "noreply@enterprise.com";
         _fromName = _configuration["EmailSettings:FromName"] ?? "Enterprise";
@@ -179,40 +182,107 @@ public class EmailService : IEmailService
             return;
         }
 
-        try
+        // Execute email sending with resilience policy if available
+        if (_policyProvider != null)
         {
-            var client = new SendGridClient(_sendGridApiKey);
-            var from = new EmailAddress(_fromEmail, _fromName);
-            var to = new EmailAddress(toEmail);
-            var msg = MailHelper.CreateSingleEmail(from, to, subject, htmlBody, htmlBody);
-
-            var response = await client.SendEmailAsync(msg, cancellationToken);
-
-            if (response.IsSuccessStatusCode)
+            await _policyProvider.ExecuteExternalApiOperationAsync(async () =>
             {
-                _logger.LogInformation(
-                    "Email successfully sent to {ToEmail} with subject: {Subject}",
+                try
+                {
+                    var client = new SendGridClient(_sendGridApiKey);
+                    var from = new EmailAddress(_fromEmail, _fromName);
+                    var to = new EmailAddress(toEmail);
+                    var msg = MailHelper.CreateSingleEmail(from, to, subject, htmlBody, htmlBody);
+
+                    var response = await client.SendEmailAsync(msg, cancellationToken);
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        _logger.LogInformation(
+                            "Email successfully sent to {ToEmail} with subject: {Subject}",
+                            toEmail,
+                            subject);
+                    }
+                    else
+                    {
+                        var errorBody = await response.Body.ReadAsStringAsync(cancellationToken);
+                        _logger.LogError(
+                            "Failed to send email to {ToEmail}. Status: {StatusCode}, Error: {Error}",
+                            toEmail,
+                            response.StatusCode,
+                            errorBody);
+
+                        // Throw exception to trigger retry/circuit breaker for server errors
+                        if ((int)response.StatusCode >= 500)
+                        {
+                            throw new HttpRequestException($"SendGrid server error: {response.StatusCode}");
+                        }
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    // Re-throw HTTP exceptions to be handled by Polly
+                    throw;
+                }
+                catch (TaskCanceledException)
+                {
+                    // Re-throw timeout exceptions to be handled by Polly
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Exception occurred while sending email to {ToEmail} with subject: {Subject}",
+                        toEmail,
+                        subject);
+                    throw;
+                }
+            }, cancellationToken);
+        }
+        else
+        {
+            // No policy provider - send directly (for testing scenarios)
+            try
+            {
+                var client = new SendGridClient(_sendGridApiKey);
+                var from = new EmailAddress(_fromEmail, _fromName);
+                var to = new EmailAddress(toEmail);
+                var msg = MailHelper.CreateSingleEmail(from, to, subject, htmlBody, htmlBody);
+
+                var response = await client.SendEmailAsync(msg, cancellationToken);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation(
+                        "Email successfully sent to {ToEmail} with subject: {Subject}",
+                        toEmail,
+                        subject);
+                }
+                else
+                {
+                    var errorBody = await response.Body.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError(
+                        "Failed to send email to {ToEmail}. Status: {StatusCode}, Error: {Error}",
+                        toEmail,
+                        response.StatusCode,
+                        errorBody);
+
+                    if ((int)response.StatusCode >= 500)
+                    {
+                        throw new HttpRequestException($"SendGrid server error: {response.StatusCode}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Exception occurred while sending email to {ToEmail} with subject: {Subject}",
                     toEmail,
                     subject);
+                throw;
             }
-            else
-            {
-                var errorBody = await response.Body.ReadAsStringAsync(cancellationToken);
-                _logger.LogError(
-                    "Failed to send email to {ToEmail}. Status: {StatusCode}, Error: {Error}",
-                    toEmail,
-                    response.StatusCode,
-                    errorBody);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(
-                ex,
-                "Exception occurred while sending email to {ToEmail} with subject: {Subject}",
-                toEmail,
-                subject);
-            throw;
         }
     }
 
