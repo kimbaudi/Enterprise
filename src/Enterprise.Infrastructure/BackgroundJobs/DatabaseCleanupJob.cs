@@ -28,7 +28,7 @@ public class DatabaseCleanupJob
             t => t.ExpiresAt < DateTime.UtcNow,
             CancellationToken.None)).ToList();
 
-        if (expiredTokens.Any())
+        if (expiredTokens.Count != 0)
         {
             foreach (var token in expiredTokens)
             {
