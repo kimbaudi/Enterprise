@@ -36,13 +36,13 @@ public class AuditLoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequ
         var requestName = typeof(TRequest).Name;
         if (!requestName.EndsWith("Command"))
         {
-            return await next();
+            return await next(cancellationToken);
         }
 
         // Skip audit logging commands to prevent infinite loops
         if (requestName.Contains("AuditLog"))
         {
-            return await next();
+            return await next(cancellationToken);
         }
 
         var userId = _currentUserService.UserId;
@@ -66,7 +66,7 @@ public class AuditLoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequ
         }
 
         // Execute the command
-        var response = await next();
+        var response = await next(cancellationToken);
 
         // Serialize the response (after state)
         string newValues;
