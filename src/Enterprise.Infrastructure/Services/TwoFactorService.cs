@@ -75,9 +75,8 @@ public class TwoFactorService : ITwoFactorService
 
     public string HashRecoveryCode(string code)
     {
-        using var sha256 = SHA256.Create();
         var bytes = Encoding.UTF8.GetBytes(code);
-        var hash = sha256.ComputeHash(bytes);
+        var hash = SHA256.HashData(bytes);
         return Convert.ToBase64String(hash);
     }
 
