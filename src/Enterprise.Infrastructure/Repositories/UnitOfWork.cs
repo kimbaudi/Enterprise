@@ -19,11 +19,12 @@ public class UnitOfWork : IUnitOfWork
     public IRepository<T> GetRepository<T>() where T : BaseEntity
     {
         var type = typeof(T);
-        if (!_repositories.ContainsKey(type))
+        if (!_repositories.TryGetValue(type, out object? value))
         {
-            _repositories[type] = new Repository<T>(_context);
+            value = new Repository<T>(_context);
+            _repositories[type] = value;
         }
-        return (IRepository<T>)_repositories[type];
+        return (IRepository<T>)value;
     }
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
