@@ -520,6 +520,23 @@ try
     // Cache eviction middleware (after output caching)
     app.UseMiddleware<CacheEvictionMiddleware>();
 
+    // Response caching (client-side, must be before static files)
+    app.UseResponseCaching();
+
+    // Ensure uploads directory exists
+    var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
+    if (!Directory.Exists(uploadsPath))
+    {
+        Directory.CreateDirectory(uploadsPath);
+    }
+
+    // Serve static files from uploads directory
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+        RequestPath = "/uploads"
+    });
+
     if (app.Environment.IsDevelopment())
     {
         app.UseSwagger();
@@ -560,22 +577,16 @@ try
         });
     }
 
-    // Add Response Caching Middleware
-    app.UseResponseCaching();
-
-    // Ensure uploads directory exists
-    var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
-    if (!Directory.Exists(uploadsPath))
+    // Add CORS (must be before authentication and rate limiting)
+    // Use environment-specific CORS policy for security
+    if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
     {
-        Directory.CreateDirectory(uploadsPath);
+        app.UseCors("AllowAll"); // Permissive for development/testing
     }
-
-    // Serve static files from uploads directory
-    app.UseStaticFiles(new StaticFileOptions
+    else
     {
-        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
-        RequestPath = "/uploads"
-    });
+        app.UseCors("Production"); // Restricted origins in production
+    }
 
     // Add security headers
     app.Use(async (context, next) =>
@@ -586,8 +597,6 @@ try
         context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
         await next();
     });
-
-    app.UseCors("AllowAll");
 
     // Add Rate Limiting Middleware (must be after routing, before auth)
     app.UseRateLimiter();
