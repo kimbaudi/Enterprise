@@ -67,4 +67,24 @@ public interface IMetricsService
     /// Decrement active requests gauge
     /// </summary>
     void DecrementActiveRequests();
+
+    /// <summary>
+    /// Record Hangfire job execution
+    /// </summary>
+    void RecordJobExecution(string jobName, bool success, long durationMs);
+
+    /// <summary>
+    /// Record Hangfire job failure
+    /// </summary>
+    void RecordJobFailure(string jobName, string failureReason);
+
+    /// <summary>
+    /// Increment active Hangfire jobs gauge
+    /// </summary>
+    void IncrementActiveJobs();
+
+    /// <summary>
+    /// Decrement active Hangfire jobs gauge
+    /// </summary>
+    void DecrementActiveJobs();
 }

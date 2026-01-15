@@ -3,13 +3,16 @@ using Enterprise.Application;
 using Enterprise.Application.Common.Interfaces;
 using Enterprise.Infrastructure;
 using Enterprise.Infrastructure.BackgroundJobs;
+using Enterprise.WebApi.BackgroundJobs;
 using Enterprise.WebApi.Common;
+using Enterprise.WebApi.FeatureFlags;
 using Enterprise.WebApi.Middleware;
 using Enterprise.WebApi.Services;
 using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.FeatureManagement;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OpenTelemetry.Resources;
@@ -355,6 +358,11 @@ try
     builder.Services.AddApplication();
     builder.Services.AddInfrastructure(builder.Configuration);
 
+    // Add Feature Management
+    builder.Services.AddFeatureManagement()
+        .AddFeatureFilter<RoleFeatureFilter>()
+        .AddFeatureFilter<PercentageFeatureFilter>();
+
     // Add CurrentUserService
     builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
@@ -375,7 +383,14 @@ try
                 redisConfiguration ?? "localhost:6379",
                 name: "redis-cache",
                 failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
-                tags: new[] { "cache", "redis", "ready" });
+                tags: new[] { "cache", "redis", "ready" })
+            .AddHangfire(options =>
+            {
+                options.MinimumAvailableServers = 1;
+            },
+                name: "hangfire",
+                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
+                tags: new[] { "jobs", "hangfire", "ready" });
 
         // Add Redis Distributed Cache
         builder.Services.AddStackExchangeRedisCache(options =>
@@ -385,10 +400,13 @@ try
         });
 
         // Add Hangfire services
-        builder.Services.AddHangfire(configuration => configuration
+        builder.Services.AddHangfire((serviceProvider, configuration) => configuration
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
             .UseSimpleAssemblyNameTypeSerializer()
             .UseRecommendedSerializerSettings()
+            .UseFilter(new HangfireMetricsFilter(
+                serviceProvider.GetRequiredService<IMetricsService>(),
+                serviceProvider.GetRequiredService<ILogger<HangfireMetricsFilter>>()))
             .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection"), new SqlServerStorageOptions
             {
                 CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),

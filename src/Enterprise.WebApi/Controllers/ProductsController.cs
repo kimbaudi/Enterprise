@@ -13,10 +13,12 @@ using Enterprise.Application.Features.Products.Queries.GetProductsPaginated;
 using Enterprise.Application.Features.Products.Queries.GetProductsStreaming;
 using Enterprise.Application.Features.Products.Queries.SearchProducts;
 using Enterprise.WebApi.Common;
+using Enterprise.WebApi.FeatureFlags;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.FeatureManagement.Mvc;
 
 namespace Enterprise.WebApi.Controllers;
 
@@ -56,6 +58,7 @@ public class ProductsController : ControllerBase
     /// Stream products with pagination (memory-efficient for large datasets)
     /// </summary>
     [HttpGet("stream")]
+    [FeatureGate("StreamingResponses")]
     [ProducesResponseType(typeof(IAsyncEnumerable<ProductDto>), StatusCodes.Status200OK)]
     public async IAsyncEnumerable<ProductDto> StreamProducts(
         [FromQuery] int pageNumber = 1,

@@ -24,6 +24,10 @@ public class MetricsService : IMetricsService
     private readonly Histogram<long> _databaseOperationDuration;
     private readonly ObservableGauge<int> _auditLogQueueDepth;
     private readonly UpDownCounter<int> _activeRequests;
+    private readonly Counter<long> _jobCounter;
+    private readonly Counter<long> _jobFailureCounter;
+    private readonly Histogram<long> _jobDuration;
+    private readonly UpDownCounter<int> _activeJobs;
 
     private int _currentAuditLogQueueDepth;
 
@@ -105,6 +109,27 @@ public class MetricsService : IMetricsService
             "enterprise.requests.active",
             unit: "requests",
             description: "Number of active HTTP requests");
+
+        // Hangfire job metrics
+        _jobCounter = _meter.CreateCounter<long>(
+            "enterprise.jobs.total",
+            unit: "jobs",
+            description: "Total number of Hangfire jobs executed");
+
+        _jobFailureCounter = _meter.CreateCounter<long>(
+            "enterprise.jobs.failures",
+            unit: "failures",
+            description: "Number of Hangfire job failures");
+
+        _jobDuration = _meter.CreateHistogram<long>(
+            "enterprise.jobs.duration",
+            unit: "ms",
+            description: "Duration of Hangfire job execution");
+
+        _activeJobs = _meter.CreateUpDownCounter<int>(
+            "enterprise.jobs.active",
+            unit: "jobs",
+            description: "Number of active Hangfire jobs");
     }
 
     public void IncrementRequestCount(string method, string endpoint, int statusCode)
@@ -173,5 +198,28 @@ public class MetricsService : IMetricsService
     public void DecrementActiveRequests()
     {
         _activeRequests.Add(-1);
+    }
+
+    public void RecordJobExecution(string jobName, bool success, long durationMs)
+    {
+        _jobCounter.Add(1, new KeyValuePair<string, object?>("job", jobName),
+                           new KeyValuePair<string, object?>("success", success));
+        _jobDuration.Record(durationMs, new KeyValuePair<string, object?>("job", jobName));
+    }
+
+    public void RecordJobFailure(string jobName, string failureReason)
+    {
+        _jobFailureCounter.Add(1, new KeyValuePair<string, object?>("job", jobName),
+                                  new KeyValuePair<string, object?>("reason", failureReason));
+    }
+
+    public void IncrementActiveJobs()
+    {
+        _activeJobs.Add(1);
+    }
+
+    public void DecrementActiveJobs()
+    {
+        _activeJobs.Add(-1);
     }
 }
