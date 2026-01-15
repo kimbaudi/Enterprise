@@ -4,6 +4,7 @@ using Enterprise.Application.Common.Models;
 using Enterprise.Application.DTOs;
 using Enterprise.Domain.Entities;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Enterprise.Application.Features.Products.Queries.SearchProducts;
 
@@ -30,9 +31,9 @@ public class SearchProductsQueryHandler : IRequestHandler<SearchProductsQuery, P
         {
             var searchLower = request.SearchTerm.ToLower();
             query = query.Where(p =>
-                p.Name.ToLower().Contains(searchLower) ||
+                p.Name.Contains(searchLower, StringComparison.CurrentCultureIgnoreCase) ||
                 p.Description.ToLower().Contains(searchLower) ||
-                p.SKU.ToLower().Contains(searchLower));
+                p.SKU.Contains(searchLower, StringComparison.CurrentCultureIgnoreCase));
         }
 
         // Apply price filters
