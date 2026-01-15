@@ -137,9 +137,9 @@ public class UserRepository : Repository<User>, IUserRepository
         {
             var lowerSearchTerm = searchTerm.ToLower();
             query = query.Where(u =>
-                u.Username.ToLower().Contains(lowerSearchTerm) ||
+                u.Username.Contains(lowerSearchTerm, StringComparison.CurrentCultureIgnoreCase) ||
                 u.Email.ToLower().Contains(lowerSearchTerm) ||
-                u.FirstName.ToLower().Contains(lowerSearchTerm) ||
+                u.FirstName.Contains(lowerSearchTerm, StringComparison.CurrentCultureIgnoreCase) ||
                 u.LastName.ToLower().Contains(lowerSearchTerm));
         }
 
