@@ -121,4 +121,52 @@ public class ValidationBehaviorTests
         exception.Which.Errors.Should().HaveCount(1); // One property with errors
         exception.Which.Errors["Name"].Should().HaveCount(2); // Two errors for the Name property
     }
+
+    [Fact]
+    public async Task Handle_MultipleValidators_ShouldCombineValidationErrors()
+    {
+        // Arrange
+        var validator1 = new InlineValidator<TestCommand>();
+        validator1.RuleFor(x => x.Name).NotEmpty().WithMessage("Name is required");
+
+        var validator2 = new InlineValidator<TestCommand>();
+        validator2.RuleFor(x => x.Name).MaximumLength(5).WithMessage("Name too long");
+
+        var validators = new List<IValidator<TestCommand>> { validator1, validator2 };
+        var behavior = new ValidationBehavior<TestCommand, string>(validators);
+
+        var request = new TestCommand { Name = "This is a very long name" };
+
+        Task<string> Next(CancellationToken ct) => Task.FromResult("Success");
+
+        // Act
+        var act = async () => await behavior.Handle(request, Next, CancellationToken.None);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors["Name"].Should().Contain("Name too long");
+    }
+
+    [Fact]
+    public async Task Handle_CancellationRequested_ShouldRespectCancellation()
+    {
+        // Arrange
+        var validator = new InlineValidator<TestCommand>();
+        validator.RuleFor(x => x.Name).NotEmpty();
+
+        var validators = new List<IValidator<TestCommand>> { validator };
+        var behavior = new ValidationBehavior<TestCommand, string>(validators);
+
+        var request = new TestCommand { Name = "Test" };
+        var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        Task<string> Next(CancellationToken ct) => Task.FromResult("Success");
+
+        // Act
+        var act = async () => await behavior.Handle(request, Next, cts.Token);
+
+        // Assert - Should propagate cancellation
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
 }
