@@ -7,6 +7,7 @@ using Enterprise.WebApi.BackgroundJobs;
 using Enterprise.WebApi.Common;
 using Enterprise.WebApi.Configuration;
 using Enterprise.WebApi.FeatureFlags;
+using Enterprise.WebApi.HealthChecks;
 using Enterprise.WebApi.Middleware;
 using Enterprise.WebApi.Services;
 using Hangfire;
@@ -365,21 +366,8 @@ try
             options.QueueLimit = 0;
         });
 
-        // Per-user rate limiting (for authenticated requests)
-        options.AddPolicy("perUser", httpContext =>
-        {
-            var username = httpContext.User.Identity?.Name ?? "anonymous";
-
-            return RateLimitPartition.GetTokenBucketLimiter(username, _ => new TokenBucketRateLimiterOptions
-            {
-                TokenLimit = 100,
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 5,
-                ReplenishmentPeriod = TimeSpan.FromMinutes(1),
-                TokensPerPeriod = 50,
-                AutoReplenishment = true
-            });
-        });
+        // Configure enhanced per-user rate limiting with role-based tiers
+        PerUserRateLimiterPolicy.ConfigurePerUserRateLimiting(options);
 
         // Sliding window for smoother rate limiting
         options.AddSlidingWindowLimiter("smooth", options =>
@@ -438,7 +426,13 @@ try
             },
                 name: "hangfire",
                 failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
-                tags: new[] { "jobs", "hangfire", "ready" });
+                tags: new[] { "jobs", "hangfire", "ready" })
+            .AddCheck<ApplicationHealthCheck>("application",
+                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
+                tags: new[] { "app", "ready" })
+            .AddCheck<EmailServiceHealthCheck>("email-service",
+                failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
+                tags: new[] { "email", "live" });
 
         // Add Redis Distributed Cache
         builder.Services.AddStackExchangeRedisCache(options =>
@@ -485,6 +479,12 @@ try
     // Configure the HTTP request pipeline
     // Correlation ID middleware (must be first for proper tracing across all requests)
     app.UseMiddleware<CorrelationIdMiddleware>();
+
+    // Response timing middleware (adds performance headers)
+    app.UseMiddleware<ResponseTimingMiddleware>();
+
+    // Request ID middleware (injects correlation ID into response bodies)
+    app.UseMiddleware<RequestIdMiddleware>();
 
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
