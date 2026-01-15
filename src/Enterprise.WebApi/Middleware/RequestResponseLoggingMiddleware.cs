@@ -35,10 +35,10 @@ public class RequestResponseLoggingMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        var correlationId = GetOrCreateCorrelationId(context);
+        var correlationId = context.GetCorrelationId(); // Get from CorrelationIdMiddleware
         var stopwatch = Stopwatch.StartNew();
 
-        // Log request
+        // Log request with structured data
         await LogRequestAsync(context, correlationId);
 
         // Capture original response body stream
@@ -98,31 +98,39 @@ public class RequestResponseLoggingMiddleware
                 .Where(h => !SensitiveHeaders.Contains(h.Key, StringComparer.OrdinalIgnoreCase))
                 .ToDictionary(h => h.Key, h => h.Value.ToString());
 
+            // Structured logging with key-value pairs for better querying
             _logger.LogInformation(
-                "HTTP Request: {Method} {Path}{QueryString} | CorrelationId: {CorrelationId} | ContentType: {ContentType} | ContentLength: {ContentLength} | UserAgent: {UserAgent} | ClientIP: {ClientIP}",
+                "HTTP Request | Method: {Method} Path: {Path} QueryString: {QueryString} ContentType: {ContentType} ContentLength: {ContentLength} UserAgent: {UserAgent} ClientIP: {ClientIP} Scheme: {Scheme} Host: {Host}",
                 request.Method,
-                request.Path,
-                request.QueryString,
-                correlationId,
+                request.Path.Value,
+                request.QueryString.Value,
                 request.ContentType ?? "N/A",
                 request.ContentLength ?? 0,
-                request.Headers["User-Agent"].ToString() ?? "N/A",
-                context.Connection.RemoteIpAddress?.ToString() ?? "N/A");
+                request.Headers["User-Agent"].FirstOrDefault() ?? "N/A",
+                context.Connection.RemoteIpAddress?.ToString() ?? "N/A",
+                request.Scheme,
+                request.Host.Value);
+
+            // Log sanitized headers (structured)
+            _logger.LogDebug(
+                "HTTP Request Headers | Method: {Method} Path: {Path} Headers: {@Headers}",
+                request.Method,
+                request.Path.Value,
+                sanitizedHeaders);
 
             // Log request body if available (structured for better querying)
             if (!string.IsNullOrWhiteSpace(requestBody))
             {
                 _logger.LogDebug(
-                    "HTTP Request Body: {Method} {Path} | CorrelationId: {CorrelationId} | Body: {RequestBody}",
+                    "HTTP Request Body | Method: {Method} Path: {Path} Body: {RequestBody}",
                     request.Method,
-                    request.Path,
-                    correlationId,
+                    request.Path.Value,
                     requestBody);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to log HTTP request. CorrelationId: {CorrelationId}", correlationId);
+            _logger.LogWarning(ex, "Failed to log HTTP request | ErrorType: RequestLoggingFailure");
         }
     }
 
@@ -153,52 +161,45 @@ public class RequestResponseLoggingMiddleware
                           response.StatusCode >= 400 ? LogLevel.Warning :
                           LogLevel.Information;
 
+            // Structured response logging with performance metrics
             _logger.Log(
                 logLevel,
-                "HTTP Response: {Method} {Path} | StatusCode: {StatusCode} | Duration: {Duration}ms | CorrelationId: {CorrelationId} | ContentType: {ContentType} | ContentLength: {ContentLength}",
+                "HTTP Response | Method: {Method} Path: {Path} StatusCode: {StatusCode} Duration: {Duration}ms ContentType: {ContentType} ContentLength: {ContentLength} Success: {Success}",
                 context.Request.Method,
-                context.Request.Path,
+                context.Request.Path.Value,
                 response.StatusCode,
                 elapsedMilliseconds,
-                correlationId,
                 response.ContentType ?? "N/A",
-                responseBody.Length);
+                responseBody.Length,
+                response.StatusCode < 400);
+
+            // Log performance warning for slow requests
+            if (elapsedMilliseconds > 1000)
+            {
+                _logger.LogWarning(
+                    "Slow Request Detected | Method: {Method} Path: {Path} Duration: {Duration}ms StatusCode: {StatusCode}",
+                    context.Request.Method,
+                    context.Request.Path.Value,
+                    elapsedMilliseconds,
+                    response.StatusCode);
+            }
 
             // Log response body at debug level if available
             if (!string.IsNullOrWhiteSpace(responseBodyText))
             {
                 _logger.LogDebug(
-                    "HTTP Response Body: {Method} {Path} | StatusCode: {StatusCode} | CorrelationId: {CorrelationId} | Body: {ResponseBody}",
+                    "HTTP Response Body | Method: {Method} Path: {Path} StatusCode: {StatusCode} BodyLength: {BodyLength} Body: {ResponseBody}",
                     context.Request.Method,
-                    context.Request.Path,
+                    context.Request.Path.Value,
                     response.StatusCode,
-                    correlationId,
+                    responseBodyText.Length,
                     responseBodyText.Length > 1000 ? $"{responseBodyText[..1000]}..." : responseBodyText);
             }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to log HTTP response. CorrelationId: {CorrelationId}", correlationId);
+            _logger.LogWarning(ex, "Failed to log HTTP response | ErrorType: ResponseLoggingFailure");
         }
-    }
-
-    private string GetOrCreateCorrelationId(HttpContext context)
-    {
-        const string correlationIdHeader = "X-Correlation-ID";
-
-        // Try to get from request header
-        if (context.Request.Headers.TryGetValue(correlationIdHeader, out var correlationId) &&
-            !string.IsNullOrWhiteSpace(correlationId))
-        {
-            // Set on response so client can correlate
-            context.Response.Headers[correlationIdHeader] = correlationId.ToString();
-            return correlationId.ToString();
-        }
-
-        // Generate new correlation ID
-        var newCorrelationId = Guid.NewGuid().ToString();
-        context.Response.Headers[correlationIdHeader] = newCorrelationId;
-        return newCorrelationId;
     }
 
     private string SanitizeRequestBody(string body, string? contentType)

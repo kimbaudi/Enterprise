@@ -5,6 +5,7 @@ using Enterprise.Infrastructure;
 using Enterprise.Infrastructure.BackgroundJobs;
 using Enterprise.WebApi.BackgroundJobs;
 using Enterprise.WebApi.Common;
+using Enterprise.WebApi.Configuration;
 using Enterprise.WebApi.FeatureFlags;
 using Enterprise.WebApi.Middleware;
 using Enterprise.WebApi.Services;
@@ -21,10 +22,16 @@ using Serilog;
 using System.Text;
 using System.Threading.RateLimiting;
 
-// Configure Serilog
+// Configure Serilog with structured logging enrichers for correlation tracking
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
-    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day)
+    .Enrich.FromLogContext() // Allows pushing properties like CorrelationId
+    .Enrich.WithProperty("Application", "Enterprise.WebApi")
+    .WriteTo.Console(outputTemplate:
+        "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj} {Properties:j}{NewLine}{Exception}")
+    .WriteTo.File(
+        "logs/log-.txt",
+        rollingInterval: RollingInterval.Day,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {CorrelationId} {Message:lj} {Properties:j}{NewLine}{Exception}")
     .CreateLogger();
 
 try
@@ -51,14 +58,18 @@ try
         builder.Services.AddControllers();
     }
 
-    // Add Response Compression (Gzip and Brotli)
+    // Add Response Compression Configuration
+    builder.Services.Configure<Enterprise.WebApi.Configuration.CompressionOptions>(
+        builder.Configuration.GetSection("Compression"));
+
+    // Add Response Compression (Gzip and Brotli) with size threshold
     builder.Services.AddResponseCompression(options =>
     {
         options.EnableForHttps = true;
         options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
         options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
         options.MimeTypes = Microsoft.AspNetCore.ResponseCompression.ResponseCompressionDefaults.MimeTypes.Concat(
-            new[] { "application/json", "application/xml", "text/plain", "text/css", "text/javascript" });
+            new[] { "application/json", "application/xml", "text/plain", "text/css", "text/javascript", "application/javascript" });
     });
 
     builder.Services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(options =>
@@ -472,6 +483,9 @@ try
     var isTestingEnvironment = app.Environment.IsEnvironment("Testing");
 
     // Configure the HTTP request pipeline
+    // Correlation ID middleware (must be first for proper tracing across all requests)
+    app.UseMiddleware<CorrelationIdMiddleware>();
+
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
     // Metrics tracking (skip in Testing environment)
