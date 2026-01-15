@@ -144,12 +144,30 @@ try
         {
             Title = "Enterprise Web API",
             Version = "v1",
-            Description = "An enterprise-ready ASP.NET Core Web API with clean architecture, CQRS pattern, Redis caching, output caching, and compression",
+            Description = @"An enterprise-ready ASP.NET Core Web API with:
+- Clean Architecture & CQRS Pattern with MediatR
+- JWT Authentication & Two-Factor Authentication
+- Redis Distributed Caching & Output Caching
+- Response Compression (Brotli & Gzip)
+- Rate Limiting & Circuit Breaker Patterns
+- Audit Logging & Soft Delete Support
+- Background Jobs with Hangfire
+- Feature Flags for A/B Testing
+- OpenTelemetry Observability
+- YARP Reverse Proxy
+- Comprehensive Unit & Integration Tests",
             Contact = new OpenApiContact
             {
-                Name = "Your Company",
-                Email = "contact@yourcompany.com"
-            }
+                Name = "Enterprise Development Team",
+                Email = "api-support@enterprise.com",
+                Url = new Uri("https://enterprise.com/api-docs")
+            },
+            License = new OpenApiLicense
+            {
+                Name = "MIT License",
+                Url = new Uri("https://opensource.org/licenses/MIT")
+            },
+            TermsOfService = new Uri("https://enterprise.com/terms")
         });
 
         // Include XML documentation
@@ -157,17 +175,33 @@ try
         var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
         if (File.Exists(xmlPath))
         {
-            options.IncludeXmlComments(xmlPath);
+            options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
         }
+
+        // Enable annotations for better documentation
+        options.EnableAnnotations();
+
+        // Add operation filters for enhanced documentation  
+        options.OperationFilter<Swashbuckle.AspNetCore.Filters.AppendAuthorizeToSummaryOperationFilter>();
+        options.OperationFilter<Swashbuckle.AspNetCore.Filters.SecurityRequirementsOperationFilter>();
+
+        // Order actions by HTTP method
+        options.OrderActionsBy((apiDesc) => $"{apiDesc.ActionDescriptor.RouteValues["controller"]}_{apiDesc.HttpMethod}");
+
+        // Use full schema names to avoid conflicts
+        options.CustomSchemaIds(type => type.FullName);
 
         // Add JWT authentication to Swagger
         options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
-            Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+            Description = @"JWT Authorization header using the Bearer scheme. 
+                          Enter 'Bearer' [space] and then your token in the text input below.
+                          Example: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'",
             Name = "Authorization",
             In = ParameterLocation.Header,
             Type = SecuritySchemeType.ApiKey,
-            Scheme = "Bearer"
+            Scheme = "Bearer",
+            BearerFormat = "JWT"
         });
 
         options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -179,7 +213,10 @@ try
                     {
                         Type = ReferenceType.SecurityScheme,
                         Id = "Bearer"
-                    }
+                    },
+                    Scheme = "oauth2",
+                    Name = "Bearer",
+                    In = ParameterLocation.Header
                 },
                 Array.Empty<string>()
             }
@@ -456,8 +493,12 @@ try
 
     app.UseHttpsRedirection();
 
-    // Response compression (must be early in pipeline)
-    app.UseResponseCompression();
+    // Response compression (must be early in pipeline) - controlled by feature flag
+    var featureManager = app.Services.GetRequiredService<IFeatureManager>();
+    if (await featureManager.IsEnabledAsync("ResponseCompression"))
+    {
+        app.UseResponseCompression();
+    }
 
     // Output caching (must be before response caching)
     app.UseOutputCache();
@@ -472,6 +513,24 @@ try
         {
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "Enterprise Web API v1");
             c.RoutePrefix = "swagger"; // Set Swagger UI at /swagger
+            c.DocumentTitle = "Enterprise Web API - Documentation";
+            c.DefaultModelsExpandDepth(2);
+            c.DefaultModelExpandDepth(2);
+            c.DisplayRequestDuration();
+            c.EnableDeepLinking();
+            c.EnableFilter();
+            c.ShowExtensions();
+            c.EnableValidator();
+            c.SupportedSubmitMethods(Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Get,
+                Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Post,
+                Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Put,
+                Swashbuckle.AspNetCore.SwaggerUI.SubmitMethod.Delete);
+
+            // Enable "Try it out" for all operations by default
+            c.ConfigObject.AdditionalItems["tryItOutEnabled"] = true;
+
+            // Persist authorization data
+            c.ConfigObject.AdditionalItems["persistAuthorization"] = true;
         });
     }
 
