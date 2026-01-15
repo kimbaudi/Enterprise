@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Enterprise.Infrastructure.Services;
 
-public class PasswordHasher : IPasswordHasher
+public partial class PasswordHasher : IPasswordHasher
 {
     private const int MinPasswordLength = 8;
     private const int MaxPasswordLength = 128;
@@ -35,21 +35,21 @@ public class PasswordHasher : IPasswordHasher
         if (password.Length > MaxPasswordLength)
             errors.Add($"Password must not exceed {MaxPasswordLength} characters");
 
-        if (!Regex.IsMatch(password, @"[A-Z]"))
+        if (!UppercaseLetterRegex().IsMatch(password))
             errors.Add("Password must contain at least one uppercase letter");
 
-        if (!Regex.IsMatch(password, @"[a-z]"))
+        if (!LowercaseLetterRegex().IsMatch(password))
             errors.Add("Password must contain at least one lowercase letter");
 
-        if (!Regex.IsMatch(password, @"[0-9]"))
+        if (!DigitRegex().IsMatch(password))
             errors.Add("Password must contain at least one digit");
 
-        if (!Regex.IsMatch(password, @"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]"))
+        if (!SpecialCharacterRegex().IsMatch(password))
             errors.Add("Password must contain at least one special character");
 
         // Check for common weak passwords
         var weakPasswords = new[] { "password", "12345678", "qwerty", "admin", "letmein" };
-        if (weakPasswords.Any(weak => password.ToLower().Contains(weak)))
+        if (weakPasswords.Any(weak => password.Contains(weak, StringComparison.CurrentCultureIgnoreCase)))
             errors.Add("Password contains common weak patterns");
 
         return errors.Count == 0;
@@ -60,9 +60,9 @@ public class PasswordHasher : IPasswordHasher
         if (string.IsNullOrWhiteSpace(password) || password.Length < MinPasswordLength)
             return false;
 
-        return Regex.IsMatch(password, @"[A-Z]") &&
-               Regex.IsMatch(password, @"[a-z]") &&
-               Regex.IsMatch(password, @"[0-9]");
+        return UppercaseLetterRegex().IsMatch(password) &&
+               LowercaseLetterRegex().IsMatch(password) &&
+               DigitRegex().IsMatch(password);
     }
 
     public string GenerateRandomPassword(int length = 12)
@@ -140,4 +140,16 @@ public class PasswordHasher : IPasswordHasher
         var randomInt = BitConverter.ToUInt32(buffer, 0);
         return (int)(randomInt % max);
     }
+
+    [GeneratedRegex(@"[A-Z]")]
+    private static partial Regex UppercaseLetterRegex();
+
+    [GeneratedRegex(@"[a-z]")]
+    private static partial Regex LowercaseLetterRegex();
+
+    [GeneratedRegex(@"[0-9]")]
+    private static partial Regex DigitRegex();
+
+    [GeneratedRegex(@"[!@#$%^&*()_+\-=\[\]{};':""\\|,.<>\/?]")]
+    private static partial Regex SpecialCharacterRegex();
 }
