@@ -79,7 +79,7 @@ public class JwtTokenService : IJwtTokenService
         };
     }
 
-    private string GenerateSecureToken()
+    private static string GenerateSecureToken()
     {
         var randomNumber = new byte[64];
         using var rng = RandomNumberGenerator.Create();

@@ -281,7 +281,7 @@ public class GlobalExceptionHandlerMiddleware
         };
     }
 
-    private (HttpStatusCode, string, string, object?, bool) LogAndReturn(
+    private static (HttpStatusCode, string, string, object?, bool) LogAndReturn(
         HttpStatusCode statusCode,
         string title,
         string errorCode,
@@ -328,7 +328,7 @@ public class GlobalExceptionHandlerMiddleware
         return exception.Message;
     }
 
-    private string GetOrCreateCorrelationId(HttpContext context)
+    private static string GetOrCreateCorrelationId(HttpContext context)
     {
         // Check if correlation ID exists in request headers
         if (context.Request.Headers.TryGetValue("X-Correlation-Id", out var correlationId)
@@ -343,14 +343,14 @@ public class GlobalExceptionHandlerMiddleware
         return newCorrelationId;
     }
 
-    private Dictionary<string, string> GetSanitizedHeaders(HttpContext context)
+    private static Dictionary<string, string> GetSanitizedHeaders(HttpContext context)
     {
         return context.Request.Headers
             .Where(h => !SensitiveHeaders.Contains(h.Key, StringComparer.OrdinalIgnoreCase))
             .ToDictionary(h => h.Key, h => h.Value.ToString());
     }
 
-    private string GetClientIpAddress(HttpContext context)
+    private static string GetClientIpAddress(HttpContext context)
     {
         // Check for forwarded IP (behind proxy/load balancer)
         var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
@@ -458,7 +458,7 @@ public class GlobalExceptionHandlerMiddleware
         }
     }
 
-    private string DetermineContentType(HttpContext context)
+    private static string DetermineContentType(HttpContext context)
     {
         // Check Accept header to determine preferred response format
         var acceptHeader = context.Request.Headers.Accept.FirstOrDefault();

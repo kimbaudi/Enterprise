@@ -30,7 +30,7 @@ public abstract class IntegrationTestBase : IClassFixture<CustomWebApplicationFa
     /// <summary>
     /// Deserializes HTTP response content using System.Text.Json with async serialization
     /// </summary>
-    protected async Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response)
+    protected static async Task<T?> DeserializeResponseAsync<T>(HttpResponseMessage response)
     {
         var stream = await response.Content.ReadAsStreamAsync();
         return await JsonSerializer.DeserializeAsync<T>(stream, JsonOptions);

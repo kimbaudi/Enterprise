@@ -55,7 +55,7 @@ public class TwoFactorService : ITwoFactorService
         return codes;
     }
 
-    private string GenerateRecoveryCode()
+    private static string GenerateRecoveryCode()
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         var random = RandomNumberGenerator.Create();

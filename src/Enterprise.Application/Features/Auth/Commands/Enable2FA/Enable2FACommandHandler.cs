@@ -48,7 +48,7 @@ public class Enable2FACommandHandler : IRequestHandler<Enable2FACommand, Enable2
         };
     }
 
-    private string FormatSecretForManualEntry(string secret)
+    private static string FormatSecretForManualEntry(string secret)
     {
         // Format as groups of 4 characters for easier manual entry
         var formatted = "";
