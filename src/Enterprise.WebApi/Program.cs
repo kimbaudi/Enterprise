@@ -225,6 +225,11 @@ try
         builder.Services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
                 .AddService(serviceName: "Enterprise.WebApi", serviceVersion: "1.0.0"))
+            .WithMetrics(metrics => metrics
+                .AddMeter("Enterprise.WebApi")
+                .AddMeter("System.Net.Http")
+                .AddMeter("Microsoft.AspNetCore.Hosting")
+                .AddMeter("Microsoft.AspNetCore.Server.Kestrel"))
             .WithTracing(tracing => tracing
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
@@ -414,6 +419,12 @@ try
     // Configure the HTTP request pipeline
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
+    // Metrics tracking (skip in Testing environment)
+    if (!isTestingEnvironment)
+    {
+        app.UseMiddleware<MetricsMiddleware>();
+    }
+
     // Request/Response logging (skip in Testing environment for cleaner test output)
     if (!isTestingEnvironment)
     {
@@ -444,11 +455,17 @@ try
             c.SwaggerEndpoint("/swagger/v1/swagger.json", "Enterprise Web API v1");
             c.RoutePrefix = "swagger"; // Set Swagger UI at /swagger
         });
+    }
 
-        // Hangfire Dashboard (development only for security)
+    // Hangfire Dashboard (available in all non-Testing environments)
+    // Requires Admin role for access
+    if (!isTestingEnvironment)
+    {
         app.UseHangfireDashboard("/hangfire", new DashboardOptions
         {
-            Authorization = new[] { new HangfireAuthorizationFilter() }
+            Authorization = new[] { new HangfireAuthorizationFilter() },
+            StatsPollingInterval = 2000, // Update stats every 2 seconds
+            DisplayStorageConnectionString = false // Hide connection string for security
         });
     }
 
