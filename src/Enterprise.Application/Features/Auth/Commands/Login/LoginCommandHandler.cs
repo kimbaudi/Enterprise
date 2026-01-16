@@ -10,6 +10,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IBusinessMetricsService? _businessMetrics;
     private const int MaxFailedAttempts = 5;
     private const int LockoutMinutes = 30;
 
@@ -18,13 +19,15 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         IRefreshTokenRepository refreshTokenRepository,
         IPasswordHasher passwordHasher,
         IJwtTokenService jwtTokenService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IBusinessMetricsService? businessMetrics = null)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
         _unitOfWork = unitOfWork;
+        _businessMetrics = businessMetrics;
     }
 
     public async Task<LoginResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -34,6 +37,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
 
         if (user == null)
         {
+            _businessMetrics?.RecordLoginAttempt(success: false, username: request.Username);
             throw new UnauthorizedAccessException("Invalid username or password");
         }
 
@@ -53,6 +57,9 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         // Verify password
         if (!_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
         {
+            // Record failed login attempt
+            _businessMetrics?.RecordLoginAttempt(success: false, username: request.Username);
+
             // Increment failed login attempts
             user.FailedLoginAttempts++;
 
@@ -77,6 +84,9 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
         user.LastLoginAt = DateTime.UtcNow;
         await _userRepository.UpdateAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Record successful login
+        _businessMetrics?.RecordLoginAttempt(success: true, username: request.Username);
 
         // Check if 2FA is enabled
         if (user.TwoFactorEnabled)

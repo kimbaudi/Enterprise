@@ -548,6 +548,9 @@ try
     app.UseMiddleware<CacheEvictionMiddleware>();
 
     // Security headers (before authentication)
+    app.UseMiddleware<SecurityHeadersMiddleware>();
+
+    // Rate limiting (before authentication)
     app.Use(async (context, next) =>
     {
         context.Response.Headers["X-Content-Type-Options"] = "nosniff";

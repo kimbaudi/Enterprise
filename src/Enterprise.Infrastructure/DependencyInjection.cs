@@ -66,7 +66,9 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<ITwoFactorService, TwoFactorService>();
         services.AddScoped<ICacheService, RedisCacheService>();
+        services.AddScoped<ITwoTierCacheService, TwoTierCacheService>();
         services.AddSingleton<IMetricsService, MetricsService>();
+        services.AddSingleton<IBusinessMetricsService, BusinessMetricsService>();
 
         // Background Services
         services.AddHostedService<AuditLogProcessor>();
