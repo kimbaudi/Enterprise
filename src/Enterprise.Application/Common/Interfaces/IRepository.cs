@@ -1,3 +1,4 @@
+using Enterprise.Application.Common.Models;
 using Enterprise.Domain.Common;
 using System.Linq.Expressions;
 
@@ -32,5 +33,17 @@ public interface IRepository<T> where T : BaseEntity
         int pageSize,
         Expression<Func<T, object>>? orderBy = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get cursor-based paginated results for scalable pagination (millions of records)
+    /// </summary>
+    Task<CursorPaginatedResult<T>> GetCursorPagedAsync(
+        string? cursor,
+        int pageSize,
+        Expression<Func<T, bool>>? predicate = null,
+        Expression<Func<T, object>>? orderBy = null,
+        bool ascending = true,
+        CancellationToken cancellationToken = default);
+
     IQueryable<T> GetQueryable();
 }

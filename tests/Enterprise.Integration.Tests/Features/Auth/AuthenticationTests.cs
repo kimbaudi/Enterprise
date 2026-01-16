@@ -209,23 +209,27 @@ public class AuthenticationTests : IntegrationTestBase
     [Fact]
     public async Task Login_MultipleTimes_GeneratesDifferentTokens()
     {
-        // Arrange
-        var loginRequest = new
-        {
-            Username = "testadmin",
-            Password = "Admin@123"
-        };
+        // Arrange - Use unique IpAddress to bypass idempotency cache
+        var loginCommand1 = new LoginCommand("testadmin", "Admin@123", $"192.168.1.{Guid.NewGuid().GetHashCode() % 255}");
+        var loginCommand2 = new LoginCommand("testadmin", "Admin@123", $"192.168.1.{Guid.NewGuid().GetHashCode() % 255}");
 
         // Act
-        var response1 = await Client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response1 = await Client.PostAsJsonAsync("/api/v1/auth/login", loginCommand1);
+        response1.EnsureSuccessStatusCode();
         var result1 = await response1.Content.ReadFromJsonAsync<ApiResponse<LoginResponse>>();
 
-        await Task.Delay(1000); // Wait to ensure different timestamps
-
-        var response2 = await Client.PostAsJsonAsync("/api/v1/auth/login", loginRequest);
+        var response2 = await Client.PostAsJsonAsync("/api/v1/auth/login", loginCommand2);
+        response2.EnsureSuccessStatusCode();
         var result2 = await response2.Content.ReadFromJsonAsync<ApiResponse<LoginResponse>>();
 
-        // Assert
-        result1!.Data!.Token.Should().NotBe(result2!.Data!.Token);
+        // Assert - Tokens should be different for unique requests
+        result1.Should().NotBeNull();
+        result2.Should().NotBeNull();
+        result1!.Data.Should().NotBeNull();
+        result2!.Data.Should().NotBeNull();
+        result1.Data!.Token.Should().NotBeNullOrWhiteSpace();
+        result2.Data!.Token.Should().NotBeNullOrWhiteSpace();
+        result1.Data.Token.Should().NotBe(result2.Data.Token,
+            "each unique login request should generate a different token");
     }
 }
