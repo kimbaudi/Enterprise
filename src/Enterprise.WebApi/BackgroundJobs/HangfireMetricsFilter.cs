@@ -1,5 +1,4 @@
 using Enterprise.Application.Common.Interfaces;
-using Hangfire.Common;
 using Hangfire.Server;
 using Hangfire.States;
 using System.Diagnostics;

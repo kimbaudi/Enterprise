@@ -1,5 +1,4 @@
 using Microsoft.FeatureManagement;
-using System.Security.Claims;
 
 namespace Enterprise.WebApi.FeatureFlags;
 

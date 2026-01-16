@@ -1,5 +1,3 @@
-using System.Diagnostics.Metrics;
-
 namespace Enterprise.Application.Common.Interfaces;
 
 /// <summary>

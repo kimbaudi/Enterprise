@@ -13,7 +13,6 @@ using Enterprise.Application.Features.Products.Queries.GetProductsPaginated;
 using Enterprise.Application.Features.Products.Queries.GetProductsStreaming;
 using Enterprise.Application.Features.Products.Queries.SearchProducts;
 using Enterprise.WebApi.Common;
-using Enterprise.WebApi.FeatureFlags;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

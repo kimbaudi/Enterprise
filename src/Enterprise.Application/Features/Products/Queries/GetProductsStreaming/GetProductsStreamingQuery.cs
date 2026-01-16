@@ -1,4 +1,3 @@
-using Enterprise.Application.Common.Models;
 using Enterprise.Application.DTOs;
 using MediatR;
 

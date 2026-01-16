@@ -2,8 +2,6 @@ using Enterprise.Application.Common.Interfaces;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Polly;
-using Polly.CircuitBreaker;
-using Polly.Timeout;
 
 namespace Enterprise.Infrastructure.Policies;
 

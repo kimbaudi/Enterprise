@@ -1,5 +1,4 @@
 using AutoMapper;
-using Enterprise.Application.Common.Extensions;
 using Enterprise.Application.Common.Interfaces;
 using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Products.Queries.GetProductsCached;

@@ -5,7 +5,6 @@ using Enterprise.Infrastructure;
 using Enterprise.Infrastructure.BackgroundJobs;
 using Enterprise.WebApi.BackgroundJobs;
 using Enterprise.WebApi.Common;
-using Enterprise.WebApi.Configuration;
 using Enterprise.WebApi.FeatureFlags;
 using Enterprise.WebApi.Middleware;
 using Enterprise.WebApi.Services;

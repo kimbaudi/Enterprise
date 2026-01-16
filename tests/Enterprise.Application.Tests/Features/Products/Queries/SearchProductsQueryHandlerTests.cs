@@ -1,13 +1,11 @@
 using AutoMapper;
 using Enterprise.Application.Common.Interfaces;
-using Enterprise.Application.Common.Models;
 using Enterprise.Application.DTOs;
 using Enterprise.Application.Features.Products.Queries.SearchProducts;
 using Enterprise.Domain.Entities;
 using FluentAssertions;
 using MockQueryable.Moq;
 using Moq;
-using System.Linq.Expressions;
 
 namespace Enterprise.Application.Tests.Features.Products.Queries;
 

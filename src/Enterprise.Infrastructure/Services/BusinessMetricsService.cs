@@ -1,6 +1,6 @@
-using System.Diagnostics.Metrics;
 using Enterprise.Application.Common.Interfaces;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics.Metrics;
 
 namespace Enterprise.Infrastructure.Services;
 

@@ -1,6 +1,5 @@
 using Asp.Versioning;
 using Enterprise.Application.Common.Interfaces;
-using Enterprise.Infrastructure.Services;
 using Enterprise.WebApi.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
