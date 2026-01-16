@@ -461,6 +461,16 @@ try
     // Add CurrentUserService
     builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
+    // Add Request Timeout (P0 - Prevents thread pool exhaustion)
+    builder.Services.AddRequestTimeouts(options =>
+    {
+        // Default timeout for all requests
+        options.AddPolicy("default", TimeSpan.FromSeconds(30));
+        // Add named policies for different operation types
+        options.AddPolicy("file-upload", TimeSpan.FromMinutes(5));
+        options.AddPolicy("report-generation", TimeSpan.FromMinutes(2));
+    });
+
     // Skip production-only services in Testing environment
     if (!builder.Environment.IsEnvironment("Testing"))
     {
@@ -485,7 +495,17 @@ try
             },
                 name: "hangfire",
                 failureStatus: Microsoft.Extensions.Diagnostics.HealthChecks.HealthStatus.Degraded,
-                tags: new[] { "jobs", "hangfire", "ready" });
+                tags: new[] { "jobs", "hangfire", "ready" })
+            .AddCheck("memory", () =>
+            {
+                var allocatedBytes = GC.GetTotalMemory(forceFullCollection: false);
+                var maxBytes = 2L * 1024 * 1024 * 1024; // 2GB threshold
+                var allocatedMB = allocatedBytes / (1024 * 1024);
+
+                return allocatedBytes < maxBytes
+                    ? Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy($"Memory usage: {allocatedMB}MB")
+                    : Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Degraded($"High memory usage: {allocatedMB}MB");
+            }, tags: new[] { "memory", "live" });
 
         // Add Redis Distributed Cache
         builder.Services.AddStackExchangeRedisCache(options =>
@@ -532,6 +552,9 @@ try
     // Configure the HTTP request pipeline
     // Correlation ID middleware (must be first for proper tracing across all requests)
     app.UseMiddleware<CorrelationIdMiddleware>();
+
+    // Request timeout middleware (P0 - Prevents long-running requests)
+    app.UseRequestTimeouts();
 
     app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
@@ -711,11 +734,21 @@ try
 
         app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
         {
-            Predicate = _ => false, // Exclude all checks, just return 200 if app is running
+            Predicate = check => check.Tags.Contains("live"), // Check memory pressure for liveness
             ResponseWriter = async (context, report) =>
             {
                 context.Response.ContentType = "application/json";
-                await context.Response.WriteAsync("{\"status\":\"Healthy\"}");
+                var result = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    status = report.Status.ToString(),
+                    checks = report.Entries.Select(e => new
+                    {
+                        name = e.Key,
+                        status = e.Value.Status.ToString(),
+                        description = e.Value.Description ?? "No description"
+                    })
+                });
+                await context.Response.WriteAsync(result);
             }
         });
 
