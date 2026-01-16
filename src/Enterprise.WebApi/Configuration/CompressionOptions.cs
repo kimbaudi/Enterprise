@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Enterprise.WebApi.Configuration;
 
 /// <summary>
@@ -9,6 +11,7 @@ public class CompressionOptions
     /// Minimum response size in bytes to trigger compression (default: 1KB)
     /// Responses smaller than this will not be compressed to save CPU overhead
     /// </summary>
+    [Range(0, 1048576, ErrorMessage = "MinimumSizeBytes must be between 0 and 1MB (1048576 bytes)")]
     public int MinimumSizeBytes { get; set; } = 1024;
 
     /// <summary>

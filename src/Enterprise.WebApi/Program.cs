@@ -42,6 +42,55 @@ try
     // Add Serilog
     builder.Host.UseSerilog();
 
+    // ===== CONFIGURATION VALIDATION (P0 - Fail Fast on Startup) =====
+    // Validate critical configuration on startup to prevent runtime failures
+    // Skip validation in Testing environment to allow test flexibility
+
+    if (!builder.Environment.IsEnvironment("Testing"))
+    {
+        // JWT Settings
+        builder.Services.AddOptions<Enterprise.WebApi.Configuration.JwtSettings>()
+            .Bind(builder.Configuration.GetSection(Enterprise.WebApi.Configuration.JwtSettings.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // Redis Settings
+        builder.Services.AddOptions<Enterprise.WebApi.Configuration.RedisSettings>()
+            .Bind(builder.Configuration.GetSection(Enterprise.WebApi.Configuration.RedisSettings.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // Database Settings
+        builder.Services.AddOptions<Enterprise.WebApi.Configuration.DatabaseSettings>()
+            .Bind(builder.Configuration.GetSection(Enterprise.WebApi.Configuration.DatabaseSettings.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // Rate Limit Settings
+        builder.Services.AddOptions<Enterprise.WebApi.Configuration.RateLimitSettings>()
+            .Bind(builder.Configuration.GetSection(Enterprise.WebApi.Configuration.RateLimitSettings.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // Audit Log Settings
+        builder.Services.AddOptions<Enterprise.WebApi.Configuration.AuditLogSettings>()
+            .Bind(builder.Configuration.GetSection(Enterprise.WebApi.Configuration.AuditLogSettings.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // Compression Settings
+        builder.Services.AddOptions<Enterprise.WebApi.Configuration.CompressionOptions>()
+            .Bind(builder.Configuration.GetSection("Compression"))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        Log.Information("✅ Configuration validation completed successfully");
+    }
+    else
+    {
+        Log.Information("ℹ️  Skipping configuration validation in Testing environment");
+    }
+
     // Add HttpContextAccessor for CurrentUserService
     builder.Services.AddHttpContextAccessor();
 
@@ -57,9 +106,8 @@ try
         builder.Services.AddControllers();
     }
 
-    // Add Response Compression Configuration
-    builder.Services.Configure<Enterprise.WebApi.Configuration.CompressionOptions>(
-        builder.Configuration.GetSection("Compression"));
+    // Add Response Compression Configuration (already validated above)
+    // No need to configure again - using validated options
 
     // Add Response Compression (Gzip and Brotli) with size threshold
     builder.Services.AddResponseCompression(options =>

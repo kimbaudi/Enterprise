@@ -17,6 +17,19 @@ public static class DependencyInjection
         // Add Resilience Policies (Polly Circuit Breaker, Retry, Timeout)
         services.AddSingleton<IResiliencePolicyProvider, ResiliencePolicyProvider>();
 
+        // Get database settings (with defaults if not configured)
+        var dbConfig = configuration.GetSection("Database");
+        var maxRetryCount = 5;
+        var maxRetryDelaySeconds = 30;
+        var commandTimeoutSeconds = 30;
+
+        if (int.TryParse(dbConfig["MaxRetryCount"], out var retryCount))
+            maxRetryCount = retryCount;
+        if (int.TryParse(dbConfig["MaxRetryDelaySeconds"], out var retryDelay))
+            maxRetryDelaySeconds = retryDelay;
+        if (int.TryParse(dbConfig["CommandTimeoutSeconds"], out var cmdTimeout))
+            commandTimeoutSeconds = cmdTimeout;
+
         // Add DbContext with connection resilience
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(
@@ -27,8 +40,8 @@ public static class DependencyInjection
 
                     // Enable automatic retry on transient failures
                     sqlServerOptions.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(30),
+                        maxRetryCount: maxRetryCount,
+                        maxRetryDelay: TimeSpan.FromSeconds(maxRetryDelaySeconds),
                         errorNumbersToAdd: new int[]
                         { 
                             // SQL Server transient error numbers
@@ -48,7 +61,7 @@ public static class DependencyInjection
                         });
 
                     // Command timeout for long-running queries
-                    sqlServerOptions.CommandTimeout(30);
+                    sqlServerOptions.CommandTimeout(commandTimeoutSeconds);
                 }));
 
         // Add Repository Pattern
